@@ -15,40 +15,62 @@
  * limitations under the License.
  */
 
-package org.apache.commons.net.ftp;
+ package org.apache.commons.net.ftp;
 
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-
-import javax.net.ssl.X509TrustManager;
-
-import org.apache.commons.net.util.NetConstants;
-
-/**
- * Do not use.
- *
- * @since 2.0
- * @deprecated 3.0 use {@link org.apache.commons.net.util.TrustManagerUtils#getValidateServerCertificateTrustManager()
- *             TrustManagerUtils#getValidateServerCertificateTrustManager()} instead
- */
-@Deprecated
-public class FTPSTrustManager implements X509TrustManager {
-    /**
-     * No-op
-     */
-    @Override
-    public void checkClientTrusted(final X509Certificate[] certificates, final String authType) {
-    }
-
-    @Override
-    public void checkServerTrusted(final X509Certificate[] certificates, final String authType) throws CertificateException {
-        for (final X509Certificate certificate : certificates) {
-            certificate.checkValidity();
-        }
-    }
-
-    @Override
-    public X509Certificate[] getAcceptedIssuers() {
-        return NetConstants.EMPTY_X509_CERTIFICATE_ARRAY;
-    }
-}
+ import java.security.KeyStore;
+ import java.security.cert.CertificateException;
+ import java.security.cert.X509Certificate;
+ 
+ import javax.net.ssl.TrustManager;
+ import javax.net.ssl.TrustManagerFactory;
+ import javax.net.ssl.X509TrustManager;
+ 
+ /**
+  * Enables server certificate validation on this SSL/TLS connection.
+  *
+  * @since 2.0
+  * @deprecated 3.0 use {@link org.apache.commons.net.util.TrustManagerUtils#getValidateServerCertificateTrustManager()
+  *             TrustManagerUtils#getValidateServerCertificateTrustManager()} instead
+  */
+ @Deprecated
+ public class FTPSTrustManager implements X509TrustManager {
+ 
+     private final X509TrustManager defaultTrustManager;
+ 
+     // Constructor to initialize default TrustManager
+     public FTPSTrustManager() throws Exception {
+         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+         KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+         ks.load(null, null); // Load default TrustStore
+         tmf.init(ks);
+         TrustManager[] trustManagers = tmf.getTrustManagers();
+         defaultTrustManager = (X509TrustManager) trustManagers[0]; // Default TrustManager
+     }
+ 
+     /**
+      * Validates the client's certificate.
+      */
+     @Override
+     public void checkClientTrusted(final X509Certificate[] certificates, final String authType) throws CertificateException {
+         // Delegate to the default TrustManager to validate the client certificates
+         defaultTrustManager.checkClientTrusted(certificates, authType);
+     }
+ 
+     /**
+      * Validates the server's certificate.
+      */
+     @Override
+     public void checkServerTrusted(final X509Certificate[] certificates, final String authType) throws CertificateException {
+         // Delegate to the default TrustManager to validate the server certificates
+         defaultTrustManager.checkServerTrusted(certificates, authType);
+     }
+ 
+     /**
+      * Returns the accepted issuers.
+      */
+     @Override
+     public X509Certificate[] getAcceptedIssuers() {
+         return defaultTrustManager.getAcceptedIssuers();
+     }
+ }
+ 

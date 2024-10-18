@@ -38,8 +38,8 @@ public class SocketClientTest {
     private static final int PROXY_PORT = 1080;
 
     private static final String LOCALHOST_ADDRESS = "127.0.0.1";
-    private static final String UNRESOLVED_HOST = "unresolved";
-    private static final int REMOTE_PORT = 21;
+    private static final String UNRESOLVED_HOST = "nonexistent.example.com";
+    private static final int REMOTE_PORT = 80;
 
     @Test
     public void testConnectResolved() {

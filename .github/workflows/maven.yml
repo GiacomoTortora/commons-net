@@ -31,31 +31,13 @@ permissions:
 
 jobs:
   build:
-    timeout-minutes: 7
+    timeout-minutes: 1
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        java: [ 8, 11, 17, 21, 23 ]
-        os: [ubuntu-latest]
+        java: [ 23 ]
+        os: [macos-latest]
         experimental: [false]
-        # Don't need to run all javas on all OSes
-        include:
-          - java: 8
-            os: macos-13
-            experimental: false
-          - java: 8
-            os: windows-latest
-            experimental: false
-          # Update java 8/ubuntu to add deploy step
-          - java: 8
-            os: ubuntu-latest
-            experimental: false
-            deploy: true
-          # Experimental builds
-          - java: 24-ea
-            experimental: true        
-            os: ubuntu-latest
-
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1

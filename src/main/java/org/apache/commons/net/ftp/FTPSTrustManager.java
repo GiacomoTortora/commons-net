@@ -16,7 +16,6 @@
  */
 
  package org.apache.commons.net.ftp;
- 
  import java.security.KeyStore;
  import java.security.cert.CertificateException;
  import java.security.cert.X509Certificate;

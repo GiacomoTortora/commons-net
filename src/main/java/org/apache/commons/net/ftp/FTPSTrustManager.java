@@ -16,11 +16,9 @@
  */
 
  package org.apache.commons.net.ftp;
-
  import java.security.KeyStore;
  import java.security.cert.CertificateException;
  import java.security.cert.X509Certificate;
- 
  import javax.net.ssl.TrustManager;
  import javax.net.ssl.TrustManagerFactory;
  import javax.net.ssl.X509TrustManager;
@@ -33,7 +31,6 @@ class FTPSTrustManagerException extends Exception {
         super(message, cause);
     }
 }
- 
  /**
   * Enables server certificate validation on this SSL/TLS connection.
   *
@@ -43,9 +40,7 @@ class FTPSTrustManagerException extends Exception {
   */
  @Deprecated
  public class FTPSTrustManager implements X509TrustManager {
- 
      private final X509TrustManager defaultTrustManager;
- 
      // Constructor to initialize default TrustManager
      public FTPSTrustManager() throws FTPSTrustManagerException {
         try {
@@ -59,7 +54,6 @@ class FTPSTrustManagerException extends Exception {
             throw new FTPSTrustManagerException("Failed to initialize FTPSTrustManager", e);
         }
     }
- 
      /**
       * Validates the client's certificate.
       */
@@ -67,8 +61,7 @@ class FTPSTrustManagerException extends Exception {
      public void checkClientTrusted(final X509Certificate[] certificates, final String authType) throws CertificateException {
          // Delegate to the default TrustManager to validate the client certificates
          defaultTrustManager.checkClientTrusted(certificates, authType);
-     }
- 
+    }
      /**
       * Validates the server's certificate.
       */
@@ -76,13 +69,12 @@ class FTPSTrustManagerException extends Exception {
      public void checkServerTrusted(final X509Certificate[] certificates, final String authType) throws CertificateException {
          // Delegate to the default TrustManager to validate the server certificates
          defaultTrustManager.checkServerTrusted(certificates, authType);
-     }
- 
+    }
      /**
       * Returns the accepted issuers.
       */
      @Override
      public X509Certificate[] getAcceptedIssuers() {
          return defaultTrustManager.getAcceptedIssuers();
-     }
- }
+    }
+}

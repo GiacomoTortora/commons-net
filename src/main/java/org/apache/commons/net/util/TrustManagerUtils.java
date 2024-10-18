@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
- package org.apache.commons.net.util;
+package org.apache.commons.net.util;
 
 import java.security.KeyStore;
 import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
@@ -33,13 +32,10 @@ import javax.net.ssl.X509TrustManager;
 public final class TrustManagerUtils {
 
     private static final class TrustManager implements X509TrustManager {
-
         private final boolean checkServerValidity;
-
         TrustManager(final boolean checkServerValidity) {
             this.checkServerValidity = checkServerValidity;
         }
-
         /**
          * Enables server certificate validation on this SSL/TLS connection.
          */

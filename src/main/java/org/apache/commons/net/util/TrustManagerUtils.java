@@ -17,108 +17,107 @@
 
  package org.apache.commons.net.util;
 
- import java.security.GeneralSecurityException;
- import java.security.KeyStore;
- import java.security.cert.CertificateException;
- import java.security.cert.X509Certificate;
- 
- import javax.net.ssl.TrustManagerFactory;
- import javax.net.ssl.X509TrustManager;
- 
- /**
-  * TrustManager utilities for generating TrustManagers.
-  *
-  * @since 3.0
-  */
- public final class TrustManagerUtils {
- 
-     private static final class TrustManager implements X509TrustManager {
- 
-         private final boolean checkServerValidity;
- 
-         TrustManager(final boolean checkServerValidity) {
-             this.checkServerValidity = checkServerValidity;
-         }
- 
-         /**
-          * Empty method for client certificate validation (no validation).
-          */
-         @Override
-         public void checkClientTrusted(final X509Certificate[] certificates, final String authType) {
-             // No validation for client certificates.
-         }
- 
-         /**
-          * Validates the server's certificate.
-          */
-         @Override
-         public void checkServerTrusted(final X509Certificate[] certificates, final String authType) throws CertificateException {
-             if (checkServerValidity) {
-                 // Validate the server certificates by checking their validity.
-                 for (final X509Certificate certificate : certificates) {
-                     certificate.checkValidity();
-                 }
-             }
-         }
- 
-         /**
-          * @return an empty array of certificates
-          */
-         @Override
-         public X509Certificate[] getAcceptedIssuers() {
-             return NetConstants.EMPTY_X509_CERTIFICATE_ARRAY;
-         }
-     }
- 
-     private static final X509TrustManager ACCEPT_ALL = new TrustManager(false);
- 
-     private static final X509TrustManager CHECK_SERVER_VALIDITY = new TrustManager(true);
- 
-     /**
-      * Generate a TrustManager that performs no checks.
-      *
-      * @return the TrustManager
-      */
-     public static X509TrustManager getAcceptAllTrustManager() {
-         return ACCEPT_ALL;
-     }
- 
-     /**
-      * Return the default TrustManager provided by the JVM.
-      * <p>
-      * This should be the same as the default used by
-      * {@link javax.net.ssl.SSLContext#init(javax.net.ssl.KeyManager[], javax.net.ssl.TrustManager[], java.security.SecureRandom) SSLContext#init(KeyManager[],
-      * TrustManager[], SecureRandom)} when the TrustManager parameter is set to {@code null}
-      *
-      * @param keyStore the KeyStore to use, may be {@code null}
-      * @return the default TrustManager
-      * @throws GeneralSecurityException if an error occurs
-      */
-     public static X509TrustManager getDefaultTrustManager(final KeyStore keyStore) throws GeneralSecurityException {
-         final String defaultAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
-         final TrustManagerFactory instance = TrustManagerFactory.getInstance(defaultAlgorithm);
-         instance.init(keyStore);
-         return (X509TrustManager) instance.getTrustManagers()[0];
-     }
- 
-     /**
-      * Generate a TrustManager that checks server certificates for validity, but otherwise performs no checks.
-      *
-      * @return the validating TrustManager
-      */
-     public static X509TrustManager getValidateServerCertificateTrustManager() {
-         return CHECK_SERVER_VALIDITY;
-     }
- 
-     /**
-      * Depreacted.
-      *
-      * @deprecated Will be removed in 2.0.
-      */
-     @Deprecated
-     public TrustManagerUtils() {
-         // empty
-     }
- 
- }
- 
+import java.security.KeyStore;
+import java.security.GeneralSecurityException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+
+/**
+ * TrustManager utilities for generating TrustManagers.
+ *
+ * @since 3.0
+ */
+public final class TrustManagerUtils {
+
+    private static final class TrustManager implements X509TrustManager {
+
+        private final boolean checkServerValidity;
+
+        TrustManager(final boolean checkServerValidity) {
+            this.checkServerValidity = checkServerValidity;
+        }
+
+        /**
+         * Enables server certificate validation on this SSL/TLS connection.
+         */
+        @Override
+        public void checkClientTrusted(final X509Certificate[] certificates, final String authType) throws CertificateException {
+            if (checkServerValidity) {
+                for (final X509Certificate certificate : certificates) {
+                    certificate.checkValidity();  // Validate the server certificates (if provided in the client trust check)
+                }
+            }
+        }
+
+        @Override
+        public void checkServerTrusted(final X509Certificate[] certificates, final String authType) throws CertificateException {
+            if (checkServerValidity) {
+                for (final X509Certificate certificate : certificates) {
+                    certificate.checkValidity();  // Validate server certificates
+                }
+            }
+        }
+
+        /**
+         * @return an empty array of certificates
+         */
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return NetConstants.EMPTY_X509_CERTIFICATE_ARRAY;
+        }
+    }
+
+    private static final X509TrustManager ACCEPT_ALL = new TrustManager(false);
+
+    private static final X509TrustManager CHECK_SERVER_VALIDITY = new TrustManager(true);
+
+    /**
+     * Generate a TrustManager that performs no checks.
+     *
+     * @return the TrustManager
+     */
+    public static X509TrustManager getAcceptAllTrustManager() {
+        return ACCEPT_ALL;
+    }
+
+    /**
+     * Return the default TrustManager provided by the JVM.
+     * <p>
+     * This should be the same as the default used by
+     * {@link javax.net.ssl.SSLContext#init(javax.net.ssl.KeyManager[], javax.net.ssl.TrustManager[], java.security.SecureRandom) SSLContext#init(KeyManager[],
+     * TrustManager[], SecureRandom)} when the TrustManager parameter is set to {@code null}
+     *
+     * @param keyStore the KeyStore to use, may be {@code null}
+     * @return the default TrustManager
+     * @throws GeneralSecurityException if an error occurs
+     */
+    public static X509TrustManager getDefaultTrustManager(final KeyStore keyStore) throws GeneralSecurityException {
+        final String defaultAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+        final TrustManagerFactory instance = TrustManagerFactory.getInstance(defaultAlgorithm);
+        instance.init(keyStore);
+        return (X509TrustManager) instance.getTrustManagers()[0];
+    }
+
+    /**
+     * Generate a TrustManager that checks server certificates for validity, but otherwise performs no checks.
+     *
+     * @return the validating TrustManager
+     */
+    public static X509TrustManager getValidateServerCertificateTrustManager() {
+        return CHECK_SERVER_VALIDITY;
+    }
+
+    /**
+     * Deprecated.
+     *
+     * @deprecated Will be removed in 2.0.
+     */
+    @Deprecated
+    public TrustManagerUtils() {
+        // empty
+    }
+
+}

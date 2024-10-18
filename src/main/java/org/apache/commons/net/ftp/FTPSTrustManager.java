@@ -24,6 +24,15 @@
  import javax.net.ssl.TrustManager;
  import javax.net.ssl.TrustManagerFactory;
  import javax.net.ssl.X509TrustManager;
+
+ /**
+ * Exception thrown by FTPSTrustManager.
+ */
+class FTPSTrustManagerException extends Exception {
+    public FTPSTrustManagerException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
  
  /**
   * Enables server certificate validation on this SSL/TLS connection.
@@ -38,14 +47,18 @@
      private final X509TrustManager defaultTrustManager;
  
      // Constructor to initialize default TrustManager
-     public FTPSTrustManager() throws Exception {
-         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-         KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-         ks.load(null, null); // Load default TrustStore
-         tmf.init(ks);
-         TrustManager[] trustManagers = tmf.getTrustManagers();
-         defaultTrustManager = (X509TrustManager) trustManagers[0]; // Default TrustManager
-     }
+     public FTPSTrustManager() throws FTPSTrustManagerException {
+        try {
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            ks.load(null, null); // Load default TrustStore
+            tmf.init(ks);
+            TrustManager[] trustManagers = tmf.getTrustManagers();
+            defaultTrustManager = (X509TrustManager) trustManagers[0]; // Default TrustManager
+        } catch (Exception e) {
+            throw new FTPSTrustManagerException("Failed to initialize FTPSTrustManager", e);
+        }
+    }
  
      /**
       * Validates the client's certificate.
@@ -73,4 +86,3 @@
          return defaultTrustManager.getAcceptedIssuers();
      }
  }
- 

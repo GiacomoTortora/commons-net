@@ -18,9 +18,10 @@
 package org.apache.commons.net.util;
 
 import java.security.KeyStore;
-import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.GeneralSecurityException;
+
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 

@@ -31,7 +31,7 @@ permissions:
 
 jobs:
   build:
-    timeout-minutes: 1
+    timeout-minutes: 7
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:

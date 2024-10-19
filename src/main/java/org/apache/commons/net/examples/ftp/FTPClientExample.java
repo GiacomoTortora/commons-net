@@ -433,7 +433,7 @@ public final class FTPClientExample {
                     final String[] features = ftp.featureValues(remote);
                     if (features != null) {
                         for (final String f : features) {
-                            System.out.println(FEAT+ remote + "=" + f + ".");
+                            System.out.println(FEAT + remote + "=" + f + ".");
                         }
                     } else if (FTPReply.isPositiveCompletion(ftp.getReplyCode())) {
                         System.out.println(FEAT + remote + " is not present");

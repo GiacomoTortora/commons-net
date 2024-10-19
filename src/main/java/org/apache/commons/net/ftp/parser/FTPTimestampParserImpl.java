@@ -70,6 +70,8 @@ public class FTPTimestampParserImpl implements FTPTimestampParser, Configurable 
                     return indexOf(Calendar.DAY_OF_MONTH);
                 case 'M':
                     return indexOf(Calendar.MONTH);
+                default:
+                    break;
                 }
             }
         }

@@ -35,6 +35,7 @@ import org.apache.commons.net.util.NetConstants;
  * The IMAP class provides the basic the functionality necessary to implement your own IMAP client.
  */
 public class IMAP extends SocketClient {
+    private static final String CONN_CLOSED_WITHOUT_IND = "Connection closed without indication.";
     /**
      * Implement this interface and register it via {@link #setChunkListener(IMAPChunkListener)} in order to get access to multi-line partial command responses.
      * Useful when processing large FETCH responses.
@@ -249,7 +250,7 @@ public class IMAP extends SocketClient {
         String line = _reader.readLine();
 
         if (line == null) {
-            throw new EOFException("Connection closed without indication.");
+            throw new EOFException(CONN_CLOSED_WITHOUT_IND);
         }
 
         replyLines.add(line);
@@ -261,7 +262,7 @@ public class IMAP extends SocketClient {
                 while (literalCount >= 0) {
                     line = _reader.readLine();
                     if (line == null) {
-                        throw new EOFException("Connection closed without indication.");
+                        throw new EOFException(CONN_CLOSED_WITHOUT_IND);
                     }
                     replyLines.add(line);
                     literalCount -= line.length() + 2; // Allow for CRLF
@@ -278,7 +279,7 @@ public class IMAP extends SocketClient {
                 }
                 line = _reader.readLine(); // get next chunk or final tag
                 if (line == null) {
-                    throw new EOFException("Connection closed without indication.");
+                    throw new EOFException(CONN_CLOSED_WITHOUT_IND);
                 }
                 replyLines.add(line);
             }

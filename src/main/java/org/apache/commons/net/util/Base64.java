@@ -601,7 +601,7 @@ public class Base64 {
     }
 
     @Override
-    public final void finalize() {
+    protected final void finalize() {
         // CT: Be wary of letting constructors throw exceptions. (CT_CONSTRUCTOR_THROW)
     }
 

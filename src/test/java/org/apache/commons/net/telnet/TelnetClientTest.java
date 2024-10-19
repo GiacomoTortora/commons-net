@@ -186,6 +186,8 @@ public class TelnetClientTest extends TestCase implements TelnetNotificationHand
                     client.connect("127.0.0.1", port);
                     SMALL_BUFFER = new TestConnection(server, client, port);
                     break;
+                default:
+                    break;
                 }
                 // only increment socket number on success
                 socket++;

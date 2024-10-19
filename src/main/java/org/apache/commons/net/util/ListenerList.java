@@ -30,7 +30,7 @@ public class ListenerList implements Serializable, Iterable<EventListener> {
 
     private static final long serialVersionUID = -1934227607974228213L;
 
-    private final CopyOnWriteArrayList<EventListener> listeners;
+    private transient CopyOnWriteArrayList<EventListener> listeners;
 
     /**
      * Constructs a new instance.

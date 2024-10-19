@@ -63,7 +63,7 @@ public final class TFTPErrorPacket extends TFTPPacket {
     public static final int NO_SUCH_USER = 7;
 
     /** The error code of this packet. */
-    private final int error;
+    private final int errors;
 
     /** The error message of this packet. */
     private final String message;
@@ -88,7 +88,7 @@ public final class TFTPErrorPacket extends TFTPPacket {
             throw new TFTPPacketException("TFTP operator code does not match type.");
         }
 
-        error = (data[2] & 0xff) << 8 | data[3] & 0xff;
+        errors = (data[2] & 0xff) << 8 | data[3] & 0xff;
 
         if (length < 5) {
             throw new TFTPPacketException("Bad error packet. No message.");
@@ -116,7 +116,7 @@ public final class TFTPErrorPacket extends TFTPPacket {
     public TFTPErrorPacket(final InetAddress destination, final int port, final int error, final String message) {
         super(ERROR, destination, port);
 
-        this.error = error;
+        this.errors = error;
         this.message = message;
     }
 
@@ -126,7 +126,7 @@ public final class TFTPErrorPacket extends TFTPPacket {
      * @return The error code of the packet.
      */
     public int getError() {
-        return error;
+        return errors;
     }
 
     /**
@@ -155,8 +155,8 @@ public final class TFTPErrorPacket extends TFTPPacket {
         data = new byte[length + 5];
         data[0] = 0;
         data[1] = (byte) type;
-        data[2] = (byte) ((error & 0xffff) >> 8);
-        data[3] = (byte) (error & 0xff);
+        data[2] = (byte) ((errors & 0xffff) >> 8);
+        data[3] = (byte) (errors & 0xff);
 
         System.arraycopy(message.getBytes(Charset.defaultCharset()), 0, data, 4, length);
 
@@ -181,8 +181,8 @@ public final class TFTPErrorPacket extends TFTPPacket {
 
         data[0] = 0;
         data[1] = (byte) type;
-        data[2] = (byte) ((error & 0xffff) >> 8);
-        data[3] = (byte) (error & 0xff);
+        data[2] = (byte) ((errors & 0xffff) >> 8);
+        data[3] = (byte) (errors & 0xff);
 
         System.arraycopy(message.getBytes(Charset.defaultCharset()), 0, data, 4, length);
 
@@ -203,6 +203,6 @@ public final class TFTPErrorPacket extends TFTPPacket {
      */
     @Override
     public String toString() {
-        return super.toString() + " ERR " + error + " " + message;
+        return super.toString() + " ERR " + errors + " " + message;
     }
 }

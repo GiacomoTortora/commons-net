@@ -108,6 +108,8 @@ public abstract class CompositeFTPParseTestFramework extends AbstractFTPParseTes
             case 1:
                 assertNull("Should have failed to parse " + test, f);
                 break;
+            default:
+                break;
             }
         }
     }

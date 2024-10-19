@@ -210,7 +210,15 @@ class Telnet extends SocketClient {
                 _output_.write(COMMAND_AYT);
                 _output_.flush();
             }
-            aytMonitor.wait(timeout.toMillis());
+
+            long remainingTime = timeout.toMillis();
+            long startTime = System.currentTimeMillis();
+
+            // Use a while loop to wait for the aytFlag to change
+             while (!aytFlag && remainingTime > 0) {
+                aytMonitor.wait(remainingTime);
+                remainingTime = timeout.toMillis() - (System.currentTimeMillis() - startTime);
+            }
             if (!aytFlag) {
                 aytFlag = true;
             } else {

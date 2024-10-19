@@ -51,7 +51,7 @@ public final class TFTPDataPacket extends TFTPPacket {
     private int offset;
 
     /** The data stored in the packet. */
-    private byte[] data;
+    private byte[] datas;
 
     /**
      * Creates a data packet based from a received datagram. Assumes the datagram is at least length 4, else an ArrayIndexOutOfBoundsException may be thrown.
@@ -62,14 +62,14 @@ public final class TFTPDataPacket extends TFTPPacket {
     TFTPDataPacket(final DatagramPacket datagram) throws TFTPPacketException {
         super(DATA, datagram.getAddress(), datagram.getPort());
 
-        this.data = datagram.getData();
+        this.datas = datagram.getData();
         this.offset = 4;
 
-        if (getType() != this.data[1]) {
+        if (getType() != this.datas[1]) {
             throw new TFTPPacketException("TFTP operator code does not match type.");
         }
 
-        this.blockNumber = (this.data[2] & 0xff) << 8 | this.data[3] & 0xff;
+        this.blockNumber = (this.datas[2] & 0xff) << 8 | this.datas[3] & 0xff;
 
         this.length = datagram.getLength() - 4;
 
@@ -97,7 +97,7 @@ public final class TFTPDataPacket extends TFTPPacket {
     public TFTPDataPacket(final InetAddress destination, final int port, final int blockNumber, final byte[] data, final int offset, final int length) {
         super(DATA, destination, port);
         this.blockNumber = blockNumber;
-        this.data = data;
+        this.datas = data;
         this.offset = offset;
         this.length = Math.min(length, MAX_DATA_LENGTH);
     }
@@ -117,7 +117,7 @@ public final class TFTPDataPacket extends TFTPPacket {
      * @return The byte array containing the packet data.
      */
     public byte[] getData() {
-        return data;
+        return datas;
     }
 
     /**
@@ -155,7 +155,7 @@ public final class TFTPDataPacket extends TFTPPacket {
         data[2] = (byte) ((blockNumber & 0xffff) >> 8);
         data[3] = (byte) (blockNumber & 0xff);
 
-        System.arraycopy(this.data, offset, data, 4, length);
+        System.arraycopy(this.datas, offset, data, 4, length);
 
         return new DatagramPacket(data, length + 4, address, port);
     }
@@ -176,8 +176,8 @@ public final class TFTPDataPacket extends TFTPPacket {
         data[3] = (byte) (blockNumber & 0xff);
 
         // Doublecheck we're not the same
-        if (data != this.data) {
-            System.arraycopy(this.data, offset, data, 4, length);
+        if (data != this.datas) {
+            System.arraycopy(this.datas, offset, data, 4, length);
         }
 
         datagram.setAddress(address);
@@ -205,7 +205,7 @@ public final class TFTPDataPacket extends TFTPPacket {
      * @param length The length of the data.
      */
     public void setData(final byte[] data, final int offset, final int length) {
-        this.data = data;
+        this.datas = data;
         this.offset = offset;
         this.length = length;
 

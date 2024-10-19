@@ -37,6 +37,8 @@ import org.apache.commons.net.imap.IMAPClient;
 public final class IMAPMail {
 
     public static void main(final String[] args) throws IOException {
+        String INBOX = "inbox";
+
         if (args.length != 1) {
             System.err.println("Usage: IMAPMail imap[s]://user:password@server/");
             System.err.println("Connects to server; lists capabilities and shows Inbox status");
@@ -56,11 +58,11 @@ public final class IMAPMail {
 
             imap.capability();
 
-            imap.select("inbox");
+            imap.select(INBOX);
 
-            imap.examine("inbox");
+            imap.examine(INBOX);
 
-            imap.status("inbox", new String[] { "MESSAGES" });
+            imap.status(INBOX, new String[] { "MESSAGES" });
 
             imap.list("", "*"); // Show the folders
 

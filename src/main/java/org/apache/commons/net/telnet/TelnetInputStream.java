@@ -420,6 +420,8 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
                 receiveState = STATE_SB;
                 continue;
             /* TERMINAL-TYPE option (end) */
+            default:
+                break;
             }
 
             break; // NOPMD TODO?

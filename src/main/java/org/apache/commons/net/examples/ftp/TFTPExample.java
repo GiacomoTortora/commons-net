@@ -99,7 +99,7 @@ public final class TFTPExample {
                 verbose = true;
                 break;
             default:
-                System.err.println("Error: unrecognized option.");
+                System.err.println("Error: unrecognized option.");
                 System.err.print(USAGE);
                 System.exit(1);
                 break;
@@ -108,7 +108,7 @@ public final class TFTPExample {
 
         // Make sure there are enough arguments
         if (args.length - argc != 3) {
-            System.err.println("Error: invalid number of arguments.");
+            System.err.println("Error: invalid number of arguments.");
             System.err.print(USAGE);
             System.exit(1);
         }

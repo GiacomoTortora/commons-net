@@ -442,10 +442,12 @@ public class TFTPServer implements Runnable, AutoCloseable {
     private static final PrintStream nullStream = new PrintStream(new OutputStream() {
         @Override
         public void write(final byte[] b) throws IOException {
+            //default
         }
 
         @Override
         public void write(final int b) {
+            //default
         }
     });
 

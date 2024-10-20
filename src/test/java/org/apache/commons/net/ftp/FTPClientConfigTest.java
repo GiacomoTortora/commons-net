@@ -35,12 +35,12 @@ public class FTPClientConfigTest extends TestCase {
     private static final String D = "D";
     private static final String E = "E";
     private static final String F = "F";
-    private static final String badDelim = "jan,feb,mar,apr,may,jun,jul,aug.sep,oct,nov,dec";
+    private static final String BAD_DELIM = "jan,feb,mar,apr,may,jun,jul,aug.sep,oct,nov,dec";
 
-    private static final String tooLong = "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|jan";
+    private static final String TOO_LONG = "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|jan";
 
-    private static final String tooShort = "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov";
-    private static final String fakeLang = "abc|def|ghi|jkl|mno|pqr|stu|vwx|yza|bcd|efg|hij";
+    private static final String TOO_SHORT = "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov";
+    private static final String FAKE_LANG = "abc|def|ghi|jkl|mno|pqr|stu|vwx|yza|bcd|efg|hij";
 
     /*
      * Class under test for void FTPClientConfig(String)
@@ -71,12 +71,12 @@ public class FTPClientConfigTest extends TestCase {
 
     public void testGetDateFormatSymbols() {
 
-        assertThrows(IllegalArgumentException.class, () -> FTPClientConfig.getDateFormatSymbols(badDelim), "bad delimiter");
-        assertThrows(IllegalArgumentException.class, () -> FTPClientConfig.getDateFormatSymbols(tooLong), "more than 12 months");
-        assertThrows(IllegalArgumentException.class, () -> FTPClientConfig.getDateFormatSymbols(tooShort), "fewer than 12 months");
+        assertThrows(IllegalArgumentException.class, () -> FTPClientConfig.getDateFormatSymbols(BAD_DELIM), "bad delimiter");
+        assertThrows(IllegalArgumentException.class, () -> FTPClientConfig.getDateFormatSymbols(TOO_LONG), "more than 12 months");
+        assertThrows(IllegalArgumentException.class, () -> FTPClientConfig.getDateFormatSymbols(TOO_SHORT), "fewer than 12 months");
         DateFormatSymbols dfs2 = null;
         try {
-            dfs2 = FTPClientConfig.getDateFormatSymbols(fakeLang);
+            dfs2 = FTPClientConfig.getDateFormatSymbols(FAKE_LANG);
         } catch (final Exception e) {
             fail("rejected valid short month string");
         }
@@ -103,6 +103,7 @@ public class FTPClientConfigTest extends TestCase {
     }
 
     public void testGetServerLanguageCode() {
+        //test method
     }
 
     public void testLookupDateFormatSymbols() {
@@ -129,7 +130,7 @@ public class FTPClientConfigTest extends TestCase {
             fail("unusupported.default.to.en");
         }
         try {
-            dfs4 = FTPClientConfig.lookupDateFormatSymbols(fakeLang);
+            dfs4 = FTPClientConfig.lookupDateFormatSymbols(FAKE_LANG);
         } catch (final IllegalArgumentException e) {
             fail("not.language.code.but.defaults");
         }
@@ -163,6 +164,7 @@ public class FTPClientConfigTest extends TestCase {
     }
 
     public void testSetShortMonthNames() {
+        //test method
     }
 
 }

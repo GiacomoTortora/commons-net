@@ -69,6 +69,7 @@ public class ExtendedPOP3Client extends POP3SClient {
      * @throws NoSuchAlgorithmException Never thrown here.
      */
     public ExtendedPOP3Client() throws NoSuchAlgorithmException {
+        //default ExtendedPOP3Client constructor
     }
 
     /**

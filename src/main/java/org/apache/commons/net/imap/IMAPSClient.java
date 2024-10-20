@@ -299,8 +299,8 @@ public class IMAPSClient extends IMAPClient {
         _socket_ = socket;
         _input_ = socket.getInputStream();
         _output_ = socket.getOutputStream();
-        _reader = new CRLFLineReader(new InputStreamReader(_input_, __DEFAULT_ENCODING));
-        __writer = new BufferedWriter(new OutputStreamWriter(_output_, __DEFAULT_ENCODING));
+        _reader = new CRLFLineReader(new InputStreamReader(_input_, DEFAULT_ENCODING));
+        __writer = new BufferedWriter(new OutputStreamWriter(_output_, DEFAULT_ENCODING));
 
         if (hostnameVerifier != null && !hostnameVerifier.verify(host, socket.getSession())) {
             throw new SSLHandshakeException("Hostname doesn't match certificate");

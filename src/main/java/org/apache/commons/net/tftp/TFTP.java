@@ -256,6 +256,7 @@ public class TFTP extends DatagramSocketClient {
      * @since 3.6
      */
     protected void trace(final String direction, final TFTPPacket packet) {
+        //Trace facility; this implementation does nothing
     }
 
 }

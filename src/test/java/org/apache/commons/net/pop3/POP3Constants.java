@@ -27,11 +27,11 @@ package org.apache.commons.net.pop3;
  * more standards-compliant than others.
  */
 public class POP3Constants {
-    public static final String user = "test";
-    public static final String emptyuser = "alwaysempty";
-    public static final String password = "password";
+    public static final String USER = "test";
+    public static final String EMPTY_USER = "alwaysempty";
+    public static final String PASSWORD = "password";
 
-    public static final String mailhost = "localhost";
+    public static final String MAILHOST = "localhost";
 
     /** Cannot be instantiated. */
     private POP3Constants() {

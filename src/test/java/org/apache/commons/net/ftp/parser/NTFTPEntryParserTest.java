@@ -54,7 +54,7 @@ public class NTFTPEntryParserTest extends CompositeFTPParseTestFramework {
             { // Unix-style tests
                     "drwxr-xr-x   2 root     99           4096Feb 23 30:01 zzplayer", } };
 
-    private static final String directoryBeginningWithNumber = "12-03-96  06:38AM       <DIR>          123xyz";
+    private static final String DIRECTORY_BEGINNING_WITH_NUMBER = "12-03-96  06:38AM       <DIR>          123xyz";
 
     // byte -123 when read using ISO-8859-1 encoding becomes 0X85 line terminator
     private static final byte[] listFilesByteTrace = { 48, 57, 45, 48, 52, 45, 49, 51, 32, 32, 48, 53, 58, 53, 49, 80, 77, 32, 32, 32, 32, 32, 32, 32, 60, 68,
@@ -146,7 +146,7 @@ public class NTFTPEntryParserTest extends CompositeFTPParseTestFramework {
      * test condition reported as bug 20259 - now NET-106. directory with name beginning with a numeric character was not parsing correctly
      */
     public void testDirectoryBeginningWithNumber() {
-        final FTPFile f = getParser().parseFTPEntry(directoryBeginningWithNumber);
+        final FTPFile f = getParser().parseFTPEntry(DIRECTORY_BEGINNING_WITH_NUMBER);
         assertEquals("name", "123xyz", f.getName());
     }
 

@@ -50,6 +50,7 @@ public class UtilTest {
 
         @Override
         public void bytesTransferred(final CopyStreamEvent event) {
+            //test method
         }
 
         @Override
@@ -76,6 +77,7 @@ public class UtilTest {
 
         @Override
         public void bytesTransferred(final CopyStreamEvent event) {
+            //test method
         }
 
         @Override

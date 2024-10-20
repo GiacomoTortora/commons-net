@@ -28,19 +28,19 @@ public class SubnetUtilsNet728Test {
 
     private static final String CIDR_SUFFIX_30 = "30";
     private static final String CIDR_SUFFIX_32 = "32";
-    private static final String cidr1 = "192.168.0.151";
-    private static final String cidr2 = "192.168.0.50";
+    private static final String CIDR_1 = "192.168.0.151";
+    private static final String CIDR_2 = "192.168.0.50";
 
     private static final SubnetUtils snu1s30;
     private static final SubnetUtils snu1s32;
     private static final SubnetUtils snu2s32;
 
     static {
-        snu1s32 = new SubnetUtils(StringUtils.joinWith("/", cidr1, CIDR_SUFFIX_32));
+        snu1s32 = new SubnetUtils(StringUtils.joinWith("/", CIDR_1, CIDR_SUFFIX_32));
         snu1s32.setInclusiveHostCount(true);
-        snu1s30 = new SubnetUtils(StringUtils.joinWith("/", cidr1, CIDR_SUFFIX_30));
+        snu1s30 = new SubnetUtils(StringUtils.joinWith("/", CIDR_1, CIDR_SUFFIX_30));
         snu1s30.setInclusiveHostCount(true);
-        snu2s32 = new SubnetUtils(StringUtils.joinWith("/", cidr2, CIDR_SUFFIX_32));
+        snu2s32 = new SubnetUtils(StringUtils.joinWith("/", CIDR_2, CIDR_SUFFIX_32));
         snu2s32.setInclusiveHostCount(true);
     }
 
@@ -56,22 +56,22 @@ public class SubnetUtilsNet728Test {
 
     @Test
     void testCidr1InRange2() {
-        assertTrue(snu1s30.getInfo().isInRange(cidr1), snu1s30::toString);
+        assertTrue(snu1s30.getInfo().isInRange(CIDR_1), snu1s30::toString);
     }
 
     @Test
     void testCidr1NotInRange1() {
-        assertTrue(snu1s32.getInfo().isInRange(cidr1), snu1s32::toString);
+        assertTrue(snu1s32.getInfo().isInRange(CIDR_1), snu1s32::toString);
     }
 
     @Test
     void testCidr2InRange3() {
-        assertTrue(snu2s32.getInfo().isInRange(cidr2), snu2s32::toString);
+        assertTrue(snu2s32.getInfo().isInRange(CIDR_2), snu2s32::toString);
     }
 
     @Test
     void testCidr2NotInRange3() {
-        assertTrue(snu2s32.getInfo().isInRange(cidr2), snu2s32::toString);
+        assertTrue(snu2s32.getInfo().isInRange(CIDR_2), snu2s32::toString);
     }
 
 }

@@ -79,10 +79,12 @@ public class MLSxEntryParserTest extends AbstractFTPParseTest {
 
     @Override
     public void testParseFieldsOnDirectory() throws Exception {
+        //test method
     }
 
     @Override
     public void testParseFieldsOnFile() throws Exception {
+        //test method
     }
 
     @Override

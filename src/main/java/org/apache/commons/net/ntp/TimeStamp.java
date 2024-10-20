@@ -44,12 +44,12 @@ public class TimeStamp implements Serializable, Comparable<TimeStamp> {
     /**
      * Baseline NTP time if bit-0=0 is 7-Feb-2036 @ 06:28:16 UTC
      */
-    protected static final long msb0baseTime = 2085978496000L;
+    protected static final long MSB0_BASE_TIME = 2085978496000L;
 
     /**
      * Baseline NTP time if bit-0=1 is 1-Jan-1900 @ 01:00:00 UTC
      */
-    protected static final long msb1baseTime = -2208988800000L;
+    protected static final long MSB1_BASE_TIME = -2208988800000L;
 
     /**
      * Default NTP date string format. E.g. Fri, Sep 12 2003 21:06:23.860. See {@code java.text.SimpleDateFormat} for code descriptions.
@@ -148,10 +148,10 @@ public class TimeStamp implements Serializable, Comparable<TimeStamp> {
         final long msb = seconds & 0x80000000L;
         if (msb == 0) {
             // use base: 7-Feb-2036 @ 06:28:16 UTC
-            return msb0baseTime + seconds * 1000 + fraction;
+            return MSB0_BASE_TIME + seconds * 1000 + fraction;
         }
         // use base: 1-Jan-1900 @ 01:00:00 UTC
-        return msb1baseTime + seconds * 1000 + fraction;
+        return MSB1_BASE_TIME + seconds * 1000 + fraction;
     }
 
     /**
@@ -172,13 +172,13 @@ public class TimeStamp implements Serializable, Comparable<TimeStamp> {
      * @return NTP timestamp representation of Java time value.
      */
     protected static long toNtpTime(final long millis) {
-        final boolean useBase1 = millis < msb0baseTime; // time < Feb-2036
+        final boolean useBase1 = millis < MSB0_BASE_TIME; // time < Feb-2036
         final long baseTimeMillis;
         if (useBase1) {
-            baseTimeMillis = millis - msb1baseTime; // dates <= Feb-2036
+            baseTimeMillis = millis - MSB1_BASE_TIME; // dates <= Feb-2036
         } else {
             // if base0 needed for dates >= Feb-2036
-            baseTimeMillis = millis - msb0baseTime;
+            baseTimeMillis = millis - MSB0_BASE_TIME;
         }
 
         long seconds = baseTimeMillis / 1000;

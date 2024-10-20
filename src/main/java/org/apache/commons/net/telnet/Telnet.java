@@ -27,9 +27,9 @@ import java.util.Arrays;
 import org.apache.commons.net.SocketClient;
 
 class Telnet extends SocketClient {
-    static final boolean debug = /* true; */ false;
+    static final boolean DEBUG = /* true; */ false;
 
-    static final boolean debugoptions = /* true; */ false;
+    static final boolean DEBUG_OPTIONS = /* true; */ false;
 
     static final byte[] COMMAND_DO = { (byte) TelnetCommand.IAC, (byte) TelnetCommand.DO };
 
@@ -251,7 +251,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      **/
     final synchronized void _sendSubnegotiation(final int[] subn) throws IOException {
-        if (debug) {
+        if (DEBUG) {
             System.err.println("SEND SUBNEGOTIATION: ");
             if (subn != null) {
                 System.err.println(Arrays.toString(subn));
@@ -357,7 +357,7 @@ class Telnet extends SocketClient {
      * @param command   option code to be set.
      **/
     void processCommand(final int command) {
-        if (debugoptions) {
+        if (DEBUG_OPTIONS) {
             System.err.println("RECEIVED COMMAND: " + command);
         }
 
@@ -373,7 +373,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      **/
     void processDo(final int option) throws IOException {
-        if (debugoptions) {
+        if (DEBUG_OPTIONS) {
             System.err.println("RECEIVED DO: " + TelnetOption.getOption(option));
         }
 
@@ -439,7 +439,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      **/
     void processDont(final int option) throws IOException {
-        if (debugoptions) {
+        if (DEBUG_OPTIONS) {
             System.err.println("RECEIVED DONT: " + TelnetOption.getOption(option));
         }
         if (notifhand != null) {
@@ -482,7 +482,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      **/
     void processSuboption(final int[] suboption, final int suboptionLength) throws IOException {
-        if (debug) {
+        if (DEBUG) {
             System.err.println("PROCESS SUBOPTION.");
         }
 
@@ -492,7 +492,7 @@ class Telnet extends SocketClient {
                 final int[] responseSuboption = optionHandlers[suboption[0]].answerSubnegotiation(suboption, suboptionLength);
                 _sendSubnegotiation(responseSuboption);
             } else if (suboptionLength > 1) {
-                if (debug) {
+                if (DEBUG) {
                     for (int ii = 0; ii < suboptionLength; ii++) {
                         System.err.println("SUB[" + ii + "]: " + suboption[ii]);
                     }
@@ -512,7 +512,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      **/
     void processWill(final int option) throws IOException {
-        if (debugoptions) {
+        if (DEBUG_OPTIONS) {
             System.err.println("RECEIVED WILL: " + TelnetOption.getOption(option));
         }
 
@@ -563,7 +563,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      **/
     void processWont(final int option) throws IOException {
-        if (debugoptions) {
+        if (DEBUG_OPTIONS) {
             System.err.println("RECEIVED WONT: " + TelnetOption.getOption(option));
         }
 
@@ -736,7 +736,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      **/
     final synchronized void sendDo(final int option) throws IOException {
-        if (debug || debugoptions) {
+        if (DEBUG || DEBUG_OPTIONS) {
             System.err.println("DO: " + TelnetOption.getOption(option));
         }
         _output_.write(COMMAND_DO);
@@ -754,7 +754,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      **/
     final synchronized void sendDont(final int option) throws IOException {
-        if (debug || debugoptions) {
+        if (DEBUG || DEBUG_OPTIONS) {
             System.err.println("DONT: " + TelnetOption.getOption(option));
         }
         _output_.write(COMMAND_DONT);
@@ -771,7 +771,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      */
     final synchronized void sendTerminalType() throws IOException {
-        if (debug) {
+        if (DEBUG) {
             System.err.println("SEND TERMINAL-TYPE: " + terminalType);
         }
         if (terminalType != null) {
@@ -790,7 +790,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      **/
     final synchronized void sendWill(final int option) throws IOException {
-        if (debug || debugoptions) {
+        if (DEBUG || DEBUG_OPTIONS) {
             System.err.println("WILL: " + TelnetOption.getOption(option));
         }
         _output_.write(COMMAND_WILL);
@@ -808,7 +808,7 @@ class Telnet extends SocketClient {
      * @throws IOException - Exception in I/O.
      **/
     final synchronized void sendWont(final int option) throws IOException {
-        if (debug || debugoptions) {
+        if (DEBUG || DEBUG_OPTIONS) {
             System.err.println("WONT: " + TelnetOption.getOption(option));
         }
         _output_.write(COMMAND_WONT);

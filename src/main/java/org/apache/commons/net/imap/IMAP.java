@@ -68,7 +68,7 @@ public class IMAP extends SocketClient {
     /**
      * The default control socket encoding.
      */
-    protected static final String __DEFAULT_ENCODING = StandardCharsets.ISO_8859_1.name();
+    protected static final String DEFAULT_ENCODING = StandardCharsets.ISO_8859_1.name();
 
     /**
      * <p>
@@ -144,8 +144,8 @@ public class IMAP extends SocketClient {
     @Override
     protected void _connectAction_() throws IOException {
         super._connectAction_();
-        _reader = new CRLFLineReader(new InputStreamReader(_input_, __DEFAULT_ENCODING));
-        __writer = new BufferedWriter(new OutputStreamWriter(_output_, __DEFAULT_ENCODING));
+        _reader = new CRLFLineReader(new InputStreamReader(_input_, DEFAULT_ENCODING));
+        __writer = new BufferedWriter(new OutputStreamWriter(_output_, DEFAULT_ENCODING));
         final int tmo = getSoTimeout();
         if (tmo <= 0) { // none set currently
             setSoTimeout(connectTimeout); // use connect timeout to ensure we don't block forever

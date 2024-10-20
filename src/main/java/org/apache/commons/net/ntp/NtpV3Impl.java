@@ -75,6 +75,7 @@ public class NtpV3Impl implements NtpV3Packet {
 
     /** Creates a new instance of NtpV3Impl */
     public NtpV3Impl() {
+        //Creates a new instance of NtpV3Impl
     }
 
     /**

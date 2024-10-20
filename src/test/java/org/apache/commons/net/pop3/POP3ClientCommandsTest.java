@@ -35,10 +35,10 @@ import junit.framework.TestCase;
 public class POP3ClientCommandsTest extends TestCase {
     POP3Client pop3Client;
 
-    String user = POP3Constants.user;
-    String emptyUser = POP3Constants.emptyuser;
-    String password = POP3Constants.password;
-    String mailhost = POP3Constants.mailhost;
+    String user = POP3Constants.USER;
+    String emptyUser = POP3Constants.EMPTY_USER;
+    String password = POP3Constants.PASSWORD;
+    String mailhost = POP3Constants.MAILHOST;
 
     public POP3ClientCommandsTest(final String name) {
         super(name);

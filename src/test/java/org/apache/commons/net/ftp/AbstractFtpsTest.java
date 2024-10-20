@@ -61,7 +61,7 @@ public abstract class AbstractFtpsTest {
     protected static final long TEST_TIMEOUT = 10000; // individual test timeout
     private static final boolean TRACE_CALLS = Boolean.parseBoolean(System.getenv("TRACE_CALLS"));
     private static final boolean ADD_LISTENER = Boolean.parseBoolean(System.getenv("ADD_LISTENER"));
-    private static final long startTime = System.nanoTime();
+    private static final long START_TIME = System.nanoTime();
 
     /**
      * Returns the test directory as a String.
@@ -132,7 +132,7 @@ public abstract class AbstractFtpsTest {
 
     protected static void trace(final String msg) {
         if (TRACE_CALLS) {
-            System.err.println(msg + " " + (System.nanoTime() - startTime));
+            System.err.println(msg + " " + (System.nanoTime() - START_TIME));
         }
     }
 

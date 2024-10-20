@@ -31,14 +31,14 @@ import org.apache.commons.net.util.NetConstants;
  */
 
 public final class FromNetASCIIInputStream extends PushbackInputStream {
-    static final boolean _noConversionRequired;
-    static final String _lineSeparator;
-    static final byte[] _lineSeparatorBytes;
+    static final boolean NO_CONVERSION_REQUIRED;
+    static final String LINE_SEPARATOR;
+    static final byte[] LINE_SEPARATOR_BYTES;
 
     static {
-        _lineSeparator = System.lineSeparator();
-        _noConversionRequired = _lineSeparator.equals("\r\n");
-        _lineSeparatorBytes = _lineSeparator.getBytes(StandardCharsets.US_ASCII);
+        LINE_SEPARATOR = System.lineSeparator();
+        NO_CONVERSION_REQUIRED = LINE_SEPARATOR.equals("\r\n");
+        LINE_SEPARATOR_BYTES = LINE_SEPARATOR.getBytes(StandardCharsets.US_ASCII);
     }
 
     /**
@@ -48,7 +48,7 @@ public final class FromNetASCIIInputStream extends PushbackInputStream {
      * @return True if the NETASCII line separator differs from the local system line separator, false if they are the same.
      */
     public static boolean isConversionRequired() {
-        return !_noConversionRequired;
+        return !NO_CONVERSION_REQUIRED;
     }
 
     private int length;
@@ -59,7 +59,7 @@ public final class FromNetASCIIInputStream extends PushbackInputStream {
      * @param input the stream to wrap
      */
     public FromNetASCIIInputStream(final InputStream input) {
-        super(input, _lineSeparatorBytes.length + 1);
+        super(input, LINE_SEPARATOR_BYTES.length + 1);
     }
 
     // PushbackInputStream in JDK 1.1.3 returns the wrong thing
@@ -86,7 +86,7 @@ public final class FromNetASCIIInputStream extends PushbackInputStream {
      */
     @Override
     public int read() throws IOException {
-        if (_noConversionRequired) {
+        if (NO_CONVERSION_REQUIRED) {
             return super.read();
         }
 
@@ -117,7 +117,7 @@ public final class FromNetASCIIInputStream extends PushbackInputStream {
      */
     @Override
     public int read(final byte buffer[], int offset, final int length) throws IOException {
-        if (_noConversionRequired) {
+        if (NO_CONVERSION_REQUIRED) {
             return super.read(buffer, offset, length);
         }
 
@@ -163,7 +163,7 @@ public final class FromNetASCIIInputStream extends PushbackInputStream {
                 }
                 return '\r';
             }
-            unread(_lineSeparatorBytes);
+            unread(LINE_SEPARATOR_BYTES);
             ch = super.read();
             // This is a kluge for read(byte[], ...) to read the right amount
             --length;

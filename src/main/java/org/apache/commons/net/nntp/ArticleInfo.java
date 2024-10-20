@@ -27,5 +27,6 @@ public class ArticleInfo {
     public long articleNumber;
 
     public ArticleInfo() {
+        //to implement
     }
 }

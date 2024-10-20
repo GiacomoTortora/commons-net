@@ -312,6 +312,7 @@ public class FTPSClient extends FTPClient {
      * @since 3.1
      */
     protected void _prepareDataSocket_(final Socket socket) throws IOException {
+        //The default implementation is a no-op
     }
 
     /**

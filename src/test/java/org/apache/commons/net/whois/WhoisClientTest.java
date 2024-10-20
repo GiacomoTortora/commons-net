@@ -41,7 +41,9 @@ public class WhoisClientTest {
 
     @Test
     public void testDisconnect() throws IOException {
-        new WhoisClient().disconnect();
+        assertDoesNotThrow(() -> {
+            new WhoisClient().disconnect();
+        });
     }
 
 }

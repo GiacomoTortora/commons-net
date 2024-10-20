@@ -17,6 +17,8 @@
 
 package org.apache.commons.net.util;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.CharArrayReader;
@@ -103,8 +105,10 @@ public class UtilTest {
 
     @Test
     public void testcloseQuietly() {
-        Util.closeQuietly((Closeable) null);
-        Util.closeQuietly((Socket) null);
+        assertDoesNotThrow(() -> {
+            Util.closeQuietly((Closeable) null);
+            Util.closeQuietly((Socket) null);
+        });
     }
 
     @Test
@@ -181,43 +185,55 @@ public class UtilTest {
 
     @Test
     public void testReader_1() throws Exception {
-        final long streamSize = 0;
-        final int bufferSize = -1;
-        Util.copyReader(source, dest, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        assertDoesNotThrow(() -> {
+            final long streamSize = 0;
+            final int bufferSize = -1;
+            Util.copyReader(source, dest, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        });
     }
 
     @Test
     public void testReader0() throws Exception {
-        final long streamSize = 0;
-        final int bufferSize = 0;
-        Util.copyReader(source, dest, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        assertDoesNotThrow(() -> {
+            final long streamSize = 0;
+            final int bufferSize = 0;
+            Util.copyReader(source, dest, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        });
     }
 
     @Test
     public void testReader1() throws Exception {
-        final long streamSize = 0;
-        final int bufferSize = 1;
-        Util.copyReader(source, dest, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        assertDoesNotThrow(() -> {
+            final long streamSize = 0;
+            final int bufferSize = 1;
+            Util.copyReader(source, dest, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        });
     }
 
     @Test
     public void testStream_1() throws Exception {
-        final long streamSize = 0;
-        final int bufferSize = -1;
-        Util.copyStream(src, dst, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        assertDoesNotThrow(() -> {
+            final long streamSize = 0;
+            final int bufferSize = -1;
+            Util.copyStream(src, dst, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        });
     }
 
     @Test
     public void testStream0() throws Exception {
-        final long streamSize = 0;
-        final int bufferSize = 0;
-        Util.copyStream(src, dst, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        assertDoesNotThrow(() -> {
+            final long streamSize = 0;
+            final int bufferSize = 0;
+            Util.copyStream(src, dst, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        });
     }
 
     @Test
     public void testStream1() throws Exception {
-        final long streamSize = 0;
-        final int bufferSize = 1;
-        Util.copyStream(src, dst, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        assertDoesNotThrow(() -> {
+            final long streamSize = 0;
+            final int bufferSize = 1;
+            Util.copyStream(src, dst, bufferSize, streamSize, new CSL(1, 1, streamSize));
+        });
     }
 }

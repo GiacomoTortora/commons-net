@@ -16,6 +16,7 @@
  */
 package org.apache.commons.net.tftp;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.BufferedOutputStream;
@@ -165,10 +166,12 @@ public class TFTPTest extends TestCase {
     }
 
     public void testSend() throws IOException {
-        try (TFTP tftp = new TFTP()) {
-            tftp.open();
-            tftp.send(new TFTPDataPacket(InetAddress.getLocalHost(), tftp.getLocalPort(), 0, new byte[10]));
-        }
+        assertDoesNotThrow(() -> {
+            try (TFTP tftp = new TFTP()) {
+                tftp.open();
+                tftp.send(new TFTPDataPacket(InetAddress.getLocalHost(), tftp.getLocalPort(), 0, new byte[10]));
+            }
+        });
     }
 
     public void testTFTPBinaryDownloads() throws Exception {

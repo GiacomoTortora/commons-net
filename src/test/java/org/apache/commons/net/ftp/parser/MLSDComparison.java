@@ -17,6 +17,8 @@
 
 package org.apache.commons.net.ftp.parser;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
@@ -180,6 +182,7 @@ public class MLSDComparison {
         if (files != null) {
             for (final File mlsd : files) {
                 // System.out.println(mlsd);
+                assertDoesNotThrow(() -> {
                 FTPListParseEngine engine = new FTPListParseEngine(MLSxEntryParser.getInstance());
                 try (InputStream is = new FileInputStream(mlsd)) {
                     engine.readServerList(is, FTP.DEFAULT_CONTROL_ENCODING);
@@ -194,6 +197,7 @@ public class MLSDComparison {
                     engine.readServerList(inputStream, FTP.DEFAULT_CONTROL_ENCODING);
                     compareSortedLists(mlsds, engine.getFiles(FTPFileFilters.ALL));
                 }
+            });
             }
         }
     }

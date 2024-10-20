@@ -17,6 +17,7 @@
 
 package org.apache.commons.net.time;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -31,9 +32,11 @@ public class TimeUDPClientTest {
 
     @Test
     public void testConstructor() {
-        try (TimeUDPClient client = new TimeUDPClient()) {
-            // empty
-        }
+        assertDoesNotThrow(() -> {
+            try (TimeUDPClient client = new TimeUDPClient()) {
+                // empty
+            }
+        });
     }
 
     @Test

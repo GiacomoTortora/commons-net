@@ -31,9 +31,11 @@ public class DaytimeUDPClientTest {
 
     @Test
     public void testClose() {
-        try (DaytimeUDPClient client = new DaytimeUDPClient()) {
-            // empty
-        }
+        assertDoesNotThrow(() -> {
+            try (DaytimeUDPClient client = new DaytimeUDPClient()) {
+                // empty
+            }
+        });
     }
 
     @SuppressWarnings("resource")

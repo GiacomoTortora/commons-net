@@ -16,6 +16,7 @@
  */
 package org.apache.commons.net.ftp.parser;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -204,9 +205,11 @@ java.text.ParseException: Timestamp 'Mar 13 02:33' could not be parsed using a s
     @Test
     @Disabled
     public void testNet710() throws ParseException {
-        final Calendar serverTime = Calendar.getInstance(TimeZone.getTimeZone("EDT"), Locale.US);
-        serverTime.set(2022, 2, 16, 14, 0);
-        new FTPTimestampParserImpl().parseTimestamp("Mar 13 02:33", serverTime);
+        assertDoesNotThrow(() -> {
+            final Calendar serverTime = Calendar.getInstance(TimeZone.getTimeZone("EDT"), Locale.US);
+            serverTime.set(2022, 2, 16, 14, 0);
+            new FTPTimestampParserImpl().parseTimestamp("Mar 13 02:33", serverTime);
+        });
     }
 
     @Test

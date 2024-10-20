@@ -20,6 +20,7 @@ package org.apache.commons.net.ftp;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -68,9 +69,11 @@ public class FTPSClientTest extends AbstractFtpsTest {
 
     @Test(timeout = TEST_TIMEOUT)
     public void testHasFeature() throws SocketException, IOException {
-        trace(">>testHasFeature");
-        loginClient().disconnect();
-        trace("<<testHasFeature");
+        assertDoesNotThrow(() -> {
+            trace(">>testHasFeature");
+            loginClient().disconnect();
+            trace("<<testHasFeature");
+        });
     }
 
     private void testListFiles(final String pathname) throws SocketException, IOException {
@@ -190,9 +193,11 @@ public class FTPSClientTest extends AbstractFtpsTest {
 
     @Test(timeout = TEST_TIMEOUT)
     public void testRetrieveFilePathNameRoot() throws SocketException, IOException {
-        trace(">>testRetrieveFilePathNameRoot");
-        retrieveFile("/file.txt");
-        trace("<<testRetrieveFilePathNameRoot");
+        assertDoesNotThrow(() -> {
+            trace(">>testRetrieveFilePathNameRoot");
+            retrieveFile("/file.txt");
+            trace("<<testRetrieveFilePathNameRoot");
+        });
     }
 
 }

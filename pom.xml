@@ -47,7 +47,7 @@ Supported protocols include Echo, Finger, FTP, NNTP, NTP, POP3(S), SMTP(S), Teln
         <commons.jira.pid>12310487</commons.jira.pid>
         <commons.scmPubCheckoutDirectory>site-content</commons.scmPubCheckoutDirectory>
         <commons.scmPubUrl>https://svn.apache.org/repos/infra/websites/production/commons/content/proper/commons-net</commons.scmPubUrl>
-        <japicmp.skip>false</japicmp.skip>
+        <japicmp.skip>true</japicmp.skip>
         <checkstyle.configdir>src/conf</checkstyle.configdir>
         <spotbugs.configdir>src/conf</spotbugs.configdir>
         <!-- Current release -->

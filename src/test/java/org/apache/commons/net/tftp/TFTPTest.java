@@ -165,7 +165,7 @@ public class TFTPTest extends TestCase {
         }
     }
 
-    public void testSend() throws IOException {
+    public void testSend() {
         assertDoesNotThrow(() -> {
             try (TFTP tftp = new TFTP()) {
                 tftp.open();

@@ -41,7 +41,7 @@ public class FingerClientTest {
     }
 
     @Test
-    public void testDisconnect() throws IOException {
+    public void testDisconnect() {
         assertDoesNotThrow(() -> {
             new FingerClient().disconnect();
         });

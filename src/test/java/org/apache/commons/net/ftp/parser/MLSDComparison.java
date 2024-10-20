@@ -175,7 +175,7 @@ public class MLSDComparison {
     }
 
     @Test
-    public void testFile() throws Exception {
+    public void testFile() {
         final File path = new File(DownloadListings.DOWNLOAD_DIR);
         final FilenameFilter filter = (dir, name) -> name.endsWith("_mlsd.txt");
         final File[] files = path.listFiles(filter);

@@ -35,7 +35,7 @@ public final class finger {
         boolean longOutput = false;
         int arg = 0, index;
         String handle, host;
-        String ERR_UNKNWN_HOST = "Error unknown host: ";
+        String errUnknownHost = "Error unknown host: ";
         final FingerClient finger;
         InetAddress address = null;
 
@@ -60,7 +60,7 @@ public final class finger {
             try {
                 address = InetAddress.getLocalHost();
             } catch (final UnknownHostException e) {
-                System.err.println(ERR_UNKNWN_HOST + e.getMessage());
+                System.err.println(errUnknownHost + e.getMessage());
                 System.exit(1);
             }
 
@@ -86,7 +86,7 @@ public final class finger {
                 try {
                     address = InetAddress.getLocalHost();
                 } catch (final UnknownHostException e) {
-                    System.err.println(ERR_UNKNWN_HOST + e.getMessage());
+                    System.err.println(errUnknownHost + e.getMessage());
                     System.exit(1);
                 }
             } else {
@@ -97,7 +97,7 @@ public final class finger {
                     address = InetAddress.getByName(host);
                     System.out.println("[" + address.getHostName() + "]");
                 } catch (final UnknownHostException e) {
-                    System.err.println(ERR_UNKNWN_HOST + e.getMessage());
+                    System.err.println(errUnknownHost + e.getMessage());
                     System.exit(1);
                 }
             }

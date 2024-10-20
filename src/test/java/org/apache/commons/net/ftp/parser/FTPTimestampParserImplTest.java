@@ -204,7 +204,7 @@ java.text.ParseException: Timestamp 'Mar 13 02:33' could not be parsed using a s
      */
     @Test
     @Disabled
-    public void testNet710() throws ParseException {
+    public void testNet710() {
         assertDoesNotThrow(() -> {
             final Calendar serverTime = Calendar.getInstance(TimeZone.getTimeZone("EDT"), Locale.US);
             serverTime.set(2022, 2, 16, 14, 0);

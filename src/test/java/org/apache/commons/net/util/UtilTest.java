@@ -184,7 +184,7 @@ public class UtilTest {
     }
 
     @Test
-    public void testReader_1() throws Exception {
+    public void testReader_1() {
         assertDoesNotThrow(() -> {
             final long streamSize = 0;
             final int bufferSize = -1;
@@ -193,7 +193,7 @@ public class UtilTest {
     }
 
     @Test
-    public void testReader0() throws Exception {
+    public void testReader0() {
         assertDoesNotThrow(() -> {
             final long streamSize = 0;
             final int bufferSize = 0;
@@ -202,7 +202,7 @@ public class UtilTest {
     }
 
     @Test
-    public void testReader1() throws Exception {
+    public void testReader1() {
         assertDoesNotThrow(() -> {
             final long streamSize = 0;
             final int bufferSize = 1;
@@ -220,7 +220,7 @@ public class UtilTest {
     }
 
     @Test
-    public void testStream0() throws Exception {
+    public void testStream0() {
         assertDoesNotThrow(() -> {
             final long streamSize = 0;
             final int bufferSize = 0;
@@ -229,7 +229,7 @@ public class UtilTest {
     }
 
     @Test
-    public void testStream1() throws Exception {
+    public void testStream1() {
         assertDoesNotThrow(() -> {
             final long streamSize = 0;
             final int bufferSize = 1;

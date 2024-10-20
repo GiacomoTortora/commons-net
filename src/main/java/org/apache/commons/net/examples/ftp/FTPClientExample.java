@@ -115,7 +115,7 @@ public final class FTPClientExample {
         String serverType = null;
         String defaultDateFormat = null;
         String recentDateFormat = null;
-        String FEAT = "FEAT ";
+        String featStr = "FEAT ";
 
         int base = 0;
         for (base = 0; base < args.length; base++) {
@@ -424,7 +424,7 @@ public final class FTPClientExample {
                     if (ftp.hasFeature(remote)) {
                         System.out.println("Has feature: " + remote);
                     } else if (FTPReply.isPositiveCompletion(ftp.getReplyCode())) {
-                        System.out.println(FEAT + remote + " was not detected");
+                        System.out.println(featStr + remote + " was not detected");
                     } else {
                         System.out.println("Command failed: " + ftp.getReplyString());
                     }
@@ -433,10 +433,10 @@ public final class FTPClientExample {
                     final String[] features = ftp.featureValues(remote);
                     if (features != null) {
                         for (final String f : features) {
-                            System.out.println(FEAT + remote + "=" + f + ".");
+                            System.out.println(featStr + remote + "=" + f + ".");
                         }
                     } else if (FTPReply.isPositiveCompletion(ftp.getReplyCode())) {
-                        System.out.println(FEAT + remote + " is not present");
+                        System.out.println(featStr + remote + " is not present");
                     } else {
                         System.out.println("Command failed: " + ftp.getReplyString());
                     }

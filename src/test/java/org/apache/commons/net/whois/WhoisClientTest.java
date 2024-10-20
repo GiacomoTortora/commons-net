@@ -40,7 +40,7 @@ public class WhoisClientTest {
     }
 
     @Test
-    public void testDisconnect() throws IOException {
+    public void testDisconnect() {
         assertDoesNotThrow(() -> {
             new WhoisClient().disconnect();
         });

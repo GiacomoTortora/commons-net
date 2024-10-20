@@ -68,7 +68,7 @@ public class FTPSClientTest extends AbstractFtpsTest {
     }
 
     @Test(timeout = TEST_TIMEOUT)
-    public void testHasFeature() throws SocketException, IOException {
+    public void testHasFeature() throws SocketException {
         assertDoesNotThrow(() -> {
             trace(">>testHasFeature");
             loginClient().disconnect();
@@ -192,7 +192,7 @@ public class FTPSClientTest extends AbstractFtpsTest {
     }
 
     @Test(timeout = TEST_TIMEOUT)
-    public void testRetrieveFilePathNameRoot() throws SocketException, IOException {
+    public void testRetrieveFilePathNameRoot() throws SocketException {
         assertDoesNotThrow(() -> {
             trace(">>testRetrieveFilePathNameRoot");
             retrieveFile("/file.txt");

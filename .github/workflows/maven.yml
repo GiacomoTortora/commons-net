@@ -36,7 +36,7 @@ jobs:
     strategy:
       matrix:
         java: [ 23 ]
-        os: [macos-latest]
+        os: [ubuntu-latest]
         experimental: [false]
     runs-on: ${{ matrix.os }}
     steps:

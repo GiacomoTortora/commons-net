@@ -40,7 +40,7 @@
  |                                                                      |
  +======================================================================+
 --->
-Apache Commons Net
+Apache Commons Net - Software Dependability Project
 ===================
 
 [![Java CI](https://github.com/apache/commons-net/actions/workflows/maven.yml/badge.svg)](https://github.com/apache/commons-net/actions/workflows/maven.yml)
@@ -51,6 +51,11 @@ Apache Commons Net
 
 Apache Commons Net library contains a collection of network utilities and protocol implementations.
 Supported protocols include Echo, Finger, FTP, NNTP, NTP, POP3(S), SMTP(S), Telnet, and Whois.
+
+Info
+-------------
+This repository is a fork of the Apache Commons Net project, developed for a Software Dependability Project. Numerous modifications have been implemented, compared to the original. 
+Additionally, various tests have been conducted to ensure the reliability and robustness of the software in different scenarios.
 
 Documentation
 -------------

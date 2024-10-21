@@ -211,7 +211,7 @@ public class UtilTest {
     }
 
     @Test
-    public void testStream_1() throws Exception {
+    public void testStream_1() {
         assertDoesNotThrow(() -> {
             final long streamSize = 0;
             final int bufferSize = -1;

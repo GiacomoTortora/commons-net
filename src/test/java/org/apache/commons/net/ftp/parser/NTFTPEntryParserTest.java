@@ -16,6 +16,8 @@
  */
 package org.apache.commons.net.ftp.parser;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -195,11 +197,19 @@ public class NTFTPEntryParserTest extends CompositeFTPParseTestFramework {
     }
 
     private int testNET516(final Charset charset) throws Exception {
+        assertDoesNotThrow(() -> {
+            final FTPFileEntryParser parser = new NTFTPEntryParser();
+            final FTPListParseEngine engine = new FTPListParseEngine(parser);
+            engine.readServerList(new ByteArrayInputStream(listFilesByteTrace), charset.name());
+            final FTPFile[] ftpfiles = engine.getFiles();
+            return ftpfiles.length;
+        });
+
         final FTPFileEntryParser parser = new NTFTPEntryParser();
-        final FTPListParseEngine engine = new FTPListParseEngine(parser);
-        engine.readServerList(new ByteArrayInputStream(listFilesByteTrace), charset.name());
-        final FTPFile[] ftpfiles = engine.getFiles();
-        return ftpfiles.length;
+            final FTPListParseEngine engine = new FTPListParseEngine(parser);
+            engine.readServerList(new ByteArrayInputStream(listFilesByteTrace), charset.name());
+            final FTPFile[] ftpfiles = engine.getFiles();
+            return ftpfiles.length;
     }
 
     /**

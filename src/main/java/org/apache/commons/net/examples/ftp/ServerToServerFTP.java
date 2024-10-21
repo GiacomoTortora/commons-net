@@ -35,161 +35,136 @@ import org.apache.commons.net.ftp.FTPReply;
 public final class ServerToServerFTP {
 
     public static void main(final String[] args) {
-        String server1;
-        final String user1;
-        final String password1;
-        final String file1;
-        String server2;
-        final String user2;
-        final String password2;
-        final String file2;
-        String[] parts;
-        int port1 = 0, port2 = 0;
-        final FTPClient ftp1;
-        final FTPClient ftp2;
-        final ProtocolCommandListener listener;
-
+        // Verifica se ci sono abbastanza argomenti
         if (args.length < 8) {
             System.err.println("Usage: ftp <host1> <user1> <pass1> <file1> <host2> <user2> <pass2> <file2>");
             System.exit(1);
         }
 
-        server1 = args[0];
-        parts = server1.split(":");
-        if (parts.length == 2) {
-            server1 = parts[0];
-            port1 = Integer.parseInt(parts[1]);
-        }
-        user1 = args[1];
-        password1 = args[2];
-        file1 = args[3];
-        server2 = args[4];
-        parts = server2.split(":");
-        if (parts.length == 2) {
-            server2 = parts[0];
-            port2 = Integer.parseInt(parts[1]);
-        }
-        user2 = args[5];
-        password2 = args[6];
-        file2 = args[7];
+        // Estrae informazioni dal primo server
+        String server1 = args[0];
+        int port1 = getPort(server1);
+        server1 = getHost(server1);
 
-        listener = PrintCommandListeners.sysOutPrintCommandListener();
-        ftp1 = new FTPClient();
+        String user1 = args[1];
+        String password1 = args[2];
+        String file1 = args[3];
+
+        // Estrae informazioni dal secondo server
+        String server2 = args[4];
+        int port2 = getPort(server2);
+        server2 = getHost(server2);
+
+        String user2 = args[5];
+        String password2 = args[6];
+        String file2 = args[7];
+
+        ProtocolCommandListener listener = PrintCommandListeners.sysOutPrintCommandListener();
+        FTPClient ftp1 = new FTPClient();
+        FTPClient ftp2 = new FTPClient();
+
         ftp1.addProtocolCommandListener(listener);
-        ftp2 = new FTPClient();
         ftp2.addProtocolCommandListener(listener);
 
         try {
-            final int reply;
-            if (port1 > 0) {
-                ftp1.connect(server1, port1);
-            } else {
-                ftp1.connect(server1);
-            }
-            System.out.println("Connected to " + server1 + ".");
-
-            reply = ftp1.getReplyCode();
-
-            if (!FTPReply.isPositiveCompletion(reply)) {
-                ftp1.disconnect();
-                System.err.println("FTP server1 refused connection.");
-                System.exit(1);
-            }
-        } catch (final IOException e) {
-            if (ftp1.isConnected()) {
-                try {
-                    ftp1.disconnect();
-                } catch (final IOException f) {
-                    // do nothing
-                }
-            }
-            System.err.println("Could not connect to server1.");
-            e.printStackTrace();
-            System.exit(1);
+            // Connessione ai due server
+            connectToServer(ftp1, server1, port1);
+            connectToServer(ftp2, server2, port2);
+            // Esecuzione del trasferimento di file
+            performFileTransfer(ftp1, ftp2, user1, password1, user2, password2, file1, file2);
+        } finally {
+            // Chiusura delle connessioni
+            disconnect(ftp1);
+            disconnect(ftp2);
         }
+    }
 
+    private static int getPort(String server) {
+        String[] parts = server.split(":");
+        return parts.length == 2 ? Integer.parseInt(parts[1]) : 0;
+    }
+
+    private static String getHost(String server) {
+        String[] parts = server.split(":");
+        return parts[0];
+    }
+
+    private static void connectToServer(FTPClient ftp, String server, int port) {
         try {
-            final int reply;
-            if (port2 > 0) {
-                ftp2.connect(server2, port2);
+            if (port > 0) {
+                ftp.connect(server, port);
             } else {
-                ftp2.connect(server2);
+                ftp.connect(server);
             }
-            System.out.println("Connected to " + server2 + ".");
-
-            reply = ftp2.getReplyCode();
-
+            System.out.println("Connected to " + server + ".");
+            int reply = ftp.getReplyCode();
             if (!FTPReply.isPositiveCompletion(reply)) {
-                ftp2.disconnect();
-                System.err.println("FTP server2 refused connection.");
+                ftp.disconnect();
+                System.err.println("FTP server " + server + " refused connection.");
                 System.exit(1);
             }
-        } catch (final IOException e) {
-            if (ftp2.isConnected()) {
-                try {
-                    ftp2.disconnect();
-                } catch (final IOException f) {
-                    // do nothing
-                }
-            }
-            System.err.println("Could not connect to server2.");
-            e.printStackTrace();
-            System.exit(1);
+        } catch (IOException e) {
+            handleConnectionError(ftp, server, e);
         }
+    }
 
-        __main: try {
+    private static void handleConnectionError(FTPClient ftp, String server, IOException e) {
+        if (ftp.isConnected()) {
+            try {
+                ftp.disconnect();
+            } catch (IOException f) {
+                // do nothing
+            }
+        }
+        System.err.println("Could not connect to " + server + ".");
+        e.printStackTrace();
+        System.exit(1);
+    }
+
+    private static void performFileTransfer(FTPClient ftp1, FTPClient ftp2, String user1, String password1,
+                                            String user2, String password2, String file1, String file2) {
+        try {
+            // Login al primo server
             if (!ftp1.login(user1, password1)) {
-                System.err.println("Could not login to " + server1);
-                break __main;
+                System.err.println("Could not login to " + ftp1.getRemoteAddress().getHostAddress());
+                return;
             }
 
+            // Login al secondo server
             if (!ftp2.login(user2, password2)) {
-                System.err.println("Could not login to " + server2);
-                break __main;
+                System.err.println("Could not login to " + ftp2.getRemoteAddress().getHostAddress());
+                return;
             }
 
-            // Let's just assume success for now.
+            // Impostazione delle modalità di trasferimento
             ftp2.enterRemotePassiveMode();
-
             ftp1.enterRemoteActiveMode(InetAddress.getByName(ftp2.getPassiveHost()), ftp2.getPassivePort());
 
-            // Although you would think the store command should be sent to server2
-            // first, in reality, ftp servers like wu-ftpd start accepting data
-            // connections right after entering passive mode. Additionally, they
-            // don't even send the positive preliminary reply until after the
-            // transfer is completed (in the case of passive mode transfers).
-            // Therefore, calling store first would hang waiting for a preliminary
-            // reply.
+            // Trasferimento dei file
             if (!ftp1.remoteRetrieve(file1) || !ftp2.remoteStoreUnique(file2)) {
                 System.err.println("Couldn't initiate transfer. Check that file names are valid.");
-                break __main;
+                return;
             }
-            // if (ftp1.remoteRetrieve(file1) && ftp2.remoteStore(file2)) {
-            // We have to fetch the positive completion reply.
+
+            // Attesa della risposta positiva
             ftp1.completePendingCommand();
             ftp2.completePendingCommand();
 
-        } catch (final IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);
-        } finally {
-            try {
-                if (ftp1.isConnected()) {
-                    ftp1.logout();
-                    ftp1.disconnect();
-                }
-            } catch (final IOException e) {
-                // do nothing
-            }
-
-            try {
-                if (ftp2.isConnected()) {
-                    ftp2.logout();
-                    ftp2.disconnect();
-                }
-            } catch (final IOException e) {
-                // do nothing
-            }
         }
     }
+
+    private static void disconnect(FTPClient ftp) {
+        try {
+            if (ftp.isConnected()) {
+                ftp.logout();
+                ftp.disconnect();
+            }
+        } catch (IOException e) {
+            // do nothing
+        }
+    }
+    
 }

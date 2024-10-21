@@ -166,5 +166,4 @@ public final class ServerToServerFTP {
             // do nothing
         }
     }
-    
 }

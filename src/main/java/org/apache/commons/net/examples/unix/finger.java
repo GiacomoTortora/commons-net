@@ -37,7 +37,7 @@ public final class finger {
         FingerClient finger = new FingerClient();
 
         // Get flags. If an invalid flag is present, exit with usage message.
-        arg = parseFlags(args, longOutput, arg);
+        arg = parseFlags(args, arg);
 
         finger.setDefaultTimeout(60000);
 
@@ -48,11 +48,9 @@ public final class finger {
         }
     }
 
-    private static int parseFlags(final String[] args, boolean longOutput, int arg) {
+    private static int parseFlags(final String[] args, int arg) {
         while (arg < args.length && args[arg].startsWith("-")) {
-            if (args[arg].equals("-l")) {
-                longOutput = true;
-            } else {
+            if (!args[arg].equals("-l")) {
                 System.err.println("usage: finger [-l] [[[handle][@<server>]] ...]");
                 System.exit(1);
             }

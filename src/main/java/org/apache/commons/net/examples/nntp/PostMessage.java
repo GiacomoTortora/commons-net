@@ -57,7 +57,7 @@ public final class PostMessage {
             System.err.println("File not found. " + e.getMessage());
             System.exit(1);
         } catch (final IOException e) {
-            e.printStackTrace();
+            System.err.println("Error I/O exception: " + e.getMessage());
             System.exit(1);
         }
     }
@@ -89,7 +89,7 @@ public final class PostMessage {
             header.addHeaderField("X-Newsreader", "NetComponents");
             return header;
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error I/O exception: " + e.getMessage());
             System.exit(1);
         }
         return null; // This won't be reached if exceptions are handled.
@@ -116,7 +116,7 @@ public final class PostMessage {
         try {
             return stdin.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error I/O exception: " + e.getMessage());
             System.exit(1);
             return null; // This won't be reached if exceptions are handled.
         }
@@ -140,7 +140,6 @@ public final class PostMessage {
                     if (writer != null) {
                         writer.write(header.toString());
                         Util.copyReader(fileReader, writer);
-                        writer.close();
                         client.completePendingCommand();
                     }
                 }

@@ -85,7 +85,7 @@ public final class NTPClient {
         final NtpV3Packet message = info.getMessage();
         processStratum(message);
         processMessageDetails(message);
-        processReferenceDetails(message, info);
+        processReferenceDetails(message);
         processTimestamps(message, info);
         computeAndDisplayDetails(info);
     }
@@ -108,18 +108,16 @@ public final class NTPClient {
         final int li = message.getLeapIndicator();
         System.out.println(" leap=" + li + ", version=" + version + ", precision=" + message.getPrecision());
         System.out.println(" mode: " + message.getModeName() + " (" + message.getMode() + ")");
-        
         final int poll = message.getPoll();
         System.out.println(" poll: " + (poll <= 0 ? 1 : (int) Math.pow(2, poll)) + " seconds" + " (2 ** " + poll + ")");
         final double disp = message.getRootDispersionInMillisDouble();
         System.out.println(" rootdelay=" + numberFormat.format(message.getRootDelayInMillisDouble()) + ", rootdispersion(ms): " + numberFormat.format(disp));
     }
 
-    private static void processReferenceDetails(final NtpV3Packet message, final TimeInfo info) {
+    private static void processReferenceDetails(final NtpV3Packet message) {
         final int refId = message.getReferenceId();
         String refAddr = NtpUtils.getHostAddress(refId);
         String refName = getReferenceName(message, refId, refAddr);
-        
         if (refName != null && refName.length() > 1) {
             refAddr += " (" + refName + ")";
         }

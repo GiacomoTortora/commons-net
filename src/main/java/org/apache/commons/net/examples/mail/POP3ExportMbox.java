@@ -77,7 +77,6 @@ public final class POP3ExportMbox {
         }
 
         handleMessages(pop3, file);
-        
         try {
             pop3.logout();
             pop3.disconnect();
@@ -149,7 +148,7 @@ public final class POP3ExportMbox {
                 writeMessagesToFile(pop3, file, count);
             }
         } catch (final IOException e) {
-            e.printStackTrace();
+            System.err.println("Error I/O exception: " + e.getMessage());
         }
     }
 

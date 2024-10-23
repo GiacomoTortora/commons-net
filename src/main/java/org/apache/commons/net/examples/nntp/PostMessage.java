@@ -39,7 +39,7 @@ import org.apache.commons.net.nntp.SimpleNNTPHeader;
  */
 
 public final class PostMessage {
-
+    static String ERR = "Error I/O exception: ";
     public static void main(final String[] args) {
         if (args.length < 1) {
             System.err.println("Usage: post newsserver");
@@ -57,7 +57,7 @@ public final class PostMessage {
             System.err.println("File not found. " + e.getMessage());
             System.exit(1);
         } catch (final IOException e) {
-            System.err.println("Error I/O exception: " + e.getMessage());
+            System.err.println(ERR + e.getMessage());
             System.exit(1);
         }
     }
@@ -89,7 +89,7 @@ public final class PostMessage {
             header.addHeaderField("X-Newsreader", "NetComponents");
             return header;
         } catch (IOException e) {
-            System.err.println("Error I/O exception: " + e.getMessage());
+            System.err.println(ERR + e.getMessage());
             System.exit(1);
         }
         return null; // This won't be reached if exceptions are handled.
@@ -116,7 +116,7 @@ public final class PostMessage {
         try {
             return stdin.readLine();
         } catch (IOException e) {
-            System.err.println("Error I/O exception: " + e.getMessage());
+            System.err.println(ERR + e.getMessage());
             System.exit(1);
             return null; // This won't be reached if exceptions are handled.
         }

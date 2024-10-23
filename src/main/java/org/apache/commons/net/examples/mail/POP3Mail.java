@@ -39,19 +39,15 @@ public final class POP3Mail {
             System.err.println("Usage: POP3Mail <server[:port]> <username> <password|-|*|VARNAME> [TLS [true=implicit]]");
             System.exit(1);
         }
-
         final String[] arg0 = args[0].split(":");
         final String server = arg0[0];
         final String username = args[1];
         String password = args[2];
         // prompt for the password if necessary
         password = getPassword(username, password);
-
         final POP3Client pop3 = initializePOP3Client(args);
         final int port = getPort(arg0, pop3);
-
         System.out.println("Connecting to server " + server + " on " + port);
-
         try {
             connectAndProcessMail(pop3, server, username, password);
         } catch (final IOException e) {
@@ -62,7 +58,6 @@ public final class POP3Mail {
     private static void connectAndProcessMail(final POP3Client pop3, final String server, final String username, String password) throws IOException {
         pop3.setDefaultTimeout(60000);
         pop3.addProtocolCommandListener(PrintCommandListeners.sysOutPrintCommandListener());
-
         try {
             pop3.connect(server);
             if (!pop3.login(username, password)) {
@@ -70,7 +65,6 @@ public final class POP3Mail {
                 pop3.disconnect();
                 return;
             }
-
             final POP3MessageInfo status = pop3.status();
             if (status == null) {
                 System.err.println("Could not retrieve status.");
@@ -78,11 +72,8 @@ public final class POP3Mail {
                 pop3.disconnect();
                 return;
             }
-
             System.out.println("Status: " + status);
-
             processMessages(pop3);
-
         } finally {
             pop3.logout();
             pop3.disconnect();
@@ -99,9 +90,7 @@ public final class POP3Mail {
             System.out.println("No messages");
             return;
         }
-
         System.out.println("Message count: " + messages.length);
-
         for (final POP3MessageInfo msginfo : messages) {
             try (BufferedReader reader = (BufferedReader) pop3.retrieveMessageTop(msginfo.number, 0)) {
                 if (reader == null) {
@@ -126,7 +115,6 @@ public final class POP3Mail {
     private static POP3Client initializePOP3Client(final String[] args) {
         final String proto = args.length > 3 ? args[3] : null;
         final boolean implicit = args.length > 4 && Boolean.parseBoolean(args[4]);
-
         if (proto != null) {
             System.out.println("Using secure protocol: " + proto);
             return new POP3SClient(proto, implicit);

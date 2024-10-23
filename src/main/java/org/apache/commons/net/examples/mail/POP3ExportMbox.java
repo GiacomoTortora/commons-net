@@ -66,7 +66,6 @@ public final class POP3ExportMbox {
         final String server = arg0[0];
         final String user = args[argIdx++];
         String password = getPassword(user, args[argIdx++]);
-
         final String proto = args.length > argIdx ? args[argIdx++] : null;
         final boolean implicit = args.length > argIdx && Boolean.parseBoolean(args[argIdx++]);
 

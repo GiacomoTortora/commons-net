@@ -33,13 +33,22 @@ public final class finger {
 
     public static void main(final String[] args) {
         boolean longOutput = false;
-        int arg = 0, index;
-        String handle, host;
-        String errUnknownHost = "Error unknown host: ";
-        final FingerClient finger;
-        InetAddress address = null;
+        int arg = 0;
+        FingerClient finger = new FingerClient();
 
         // Get flags. If an invalid flag is present, exit with usage message.
+        arg = parseFlags(args, longOutput, arg);
+
+        finger.setDefaultTimeout(60000);
+
+        if (arg >= args.length) {
+            handleLocalFinger(finger, longOutput);
+        } else {
+            handleRemoteFingers(args, finger, longOutput, arg);
+        }
+    }
+
+    private static int parseFlags(final String[] args, boolean longOutput, int arg) {
         while (arg < args.length && args[arg].startsWith("-")) {
             if (args[arg].equals("-l")) {
                 longOutput = true;
@@ -49,55 +58,36 @@ public final class finger {
             }
             ++arg;
         }
+        return arg;
+    }
 
-        finger = new FingerClient();
-        // We want to timeout if a response takes longer than 60 seconds
-        finger.setDefaultTimeout(60000);
+    private static void handleLocalFinger(FingerClient finger, boolean longOutput) {
+        InetAddress address = getLocalHost();
 
-        if (arg >= args.length) {
-            // Finger local host
-
-            try {
-                address = InetAddress.getLocalHost();
-            } catch (final UnknownHostException e) {
-                System.err.println(errUnknownHost + e.getMessage());
-                System.exit(1);
-            }
-
-            try {
-                finger.connect(address);
-                System.out.print(finger.query(longOutput));
-                finger.disconnect();
-            } catch (final IOException e) {
-                System.err.println("Error I/O exception: " + e.getMessage());
-                System.exit(1);
-            }
-
-            return;
+        try {
+            finger.connect(address);
+            System.out.print(finger.query(longOutput));
+            finger.disconnect();
+        } catch (final IOException e) {
+            System.err.println("Error I/O exception: " + e.getMessage());
+            System.exit(1);
         }
+    }
 
-        // Finger each argument
+    private static void handleRemoteFingers(final String[] args, FingerClient finger, boolean longOutput, int arg) {
         while (arg < args.length) {
-
-            index = args[arg].lastIndexOf('@');
+            String handle;
+            InetAddress address;
+            int index = args[arg].lastIndexOf('@');
 
             if (index == -1) {
                 handle = args[arg];
-                try {
-                    address = InetAddress.getLocalHost();
-                } catch (final UnknownHostException e) {
-                    System.err.println(errUnknownHost + e.getMessage());
-                    System.exit(1);
-                }
+                address = getLocalHost();
             } else {
                 handle = args[arg].substring(0, index);
-                host = args[arg].substring(index + 1);
-
-                try {
-                    address = InetAddress.getByName(host);
-                    System.out.println("[" + address.getHostName() + "]");
-                } catch (final UnknownHostException e) {
-                    System.err.println(errUnknownHost + e.getMessage());
+                String host = args[arg].substring(index + 1);
+                address = getAddressByName(host);
+                if (address == null) {
                     System.exit(1);
                 }
             }
@@ -115,6 +105,27 @@ public final class finger {
             if (arg != args.length) {
                 System.out.print("\n");
             }
+        }
+    }
+
+    private static InetAddress getLocalHost() {
+        try {
+            return InetAddress.getLocalHost();
+        } catch (final UnknownHostException e) {
+            System.err.println("Error unknown host: " + e.getMessage());
+            System.exit(1);
+            return null; // Non verrà mai raggiunto, ma è necessario per la compilazione
+        }
+    }
+
+    private static InetAddress getAddressByName(String host) {
+        try {
+            InetAddress address = InetAddress.getByName(host);
+            System.out.println("[" + address.getHostName() + "]");
+            return address;
+        } catch (final UnknownHostException e) {
+            System.err.println("Error unknown host: " + e.getMessage());
+            return null; // Ritorna null se non riesce a trovare l'indirizzo
         }
     }
 }

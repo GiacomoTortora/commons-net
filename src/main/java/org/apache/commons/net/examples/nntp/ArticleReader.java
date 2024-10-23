@@ -47,44 +47,49 @@ public class ArticleReader {
         client.connect(hostname);
 
         if (args.length == 5) { // Optional auth
-            final String user = args[3];
-            final String password = args[4];
-            if (!client.authenticate(user, password)) {
-                System.out.println("Authentication failed for user " + user + "!");
-                System.exit(1);
-            }
+            authenticateClient(client, args[3], args[4]);
         }
 
         final NewsgroupInfo group = new NewsgroupInfo();
         client.selectNewsgroup(newsgroup, group);
 
-        final BufferedReader brHdr;
-        String line;
+        readAndPrintArticle(client, articleSpec, group);
+    }
+
+    private static void authenticateClient(NNTPClient client, String user, String password) throws IOException {
+        if (!client.authenticate(user, password)) {
+            System.out.println("Authentication failed for user " + user + "!");
+            System.exit(1);
+        }
+    }
+
+    private static void readAndPrintArticle(NNTPClient client, String articleSpec, NewsgroupInfo group) throws IOException {
+        BufferedReader brHdr;
         if (articleSpec != null) {
             brHdr = (BufferedReader) client.retrieveArticleHeader(articleSpec);
         } else {
             final long articleNum = group.getLastArticleLong();
             brHdr = client.retrieveArticleHeader(articleNum);
         }
-        if (brHdr != null) {
-            while ((line = brHdr.readLine()) != null) {
-                System.out.println(line);
-            }
-            brHdr.close();
-        }
-        final BufferedReader brBody;
+        printBufferedReader(brHdr);
+
+        BufferedReader brBody;
         if (articleSpec != null) {
             brBody = (BufferedReader) client.retrieveArticleBody(articleSpec);
         } else {
             final long articleNum = group.getLastArticleLong();
             brBody = client.retrieveArticleBody(articleNum);
         }
-        if (brBody != null) {
-            while ((line = brBody.readLine()) != null) {
-                System.out.println(line);
-            }
-            brBody.close();
-        }
+        printBufferedReader(brBody);
     }
 
+    private static void printBufferedReader(BufferedReader br) throws IOException {
+        if (br != null) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                System.out.println(line);
+            }
+            br.close();
+        }
+    }
 }

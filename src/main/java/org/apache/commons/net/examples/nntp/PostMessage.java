@@ -41,99 +41,92 @@ import org.apache.commons.net.nntp.SimpleNNTPHeader;
 public final class PostMessage {
 
     public static void main(final String[] args) {
-        final String from;
-        final String subject;
-        String newsgroup;
-        final String fileName;
-        final String server;
-        final String organization;
-        final String references;
-        final BufferedReader stdin;
-        Reader fileReader = null;
-        final SimpleNNTPHeader header;
-        final NNTPClient client;
-
         if (args.length < 1) {
             System.err.println("Usage: post newsserver");
             System.exit(1);
         }
 
-        server = args[0];
+        final String server = args[0];
+        final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
+        final SimpleNNTPHeader header = createHeader(stdin);
+        String fileName = getFileName(stdin);
 
-        stdin = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
+        try (Reader fileReader = Files.newBufferedReader(Paths.get(fileName), Charset.defaultCharset())) {
+            postArticle(server, header, fileReader);
+        } catch (final FileNotFoundException e) {
+            System.err.println("File not found. " + e.getMessage());
+            System.exit(1);
+        } catch (final IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
 
+    private static SimpleNNTPHeader createHeader(BufferedReader stdin) {
         try {
             System.out.print("From: ");
-            System.out.flush();
-
-            from = stdin.readLine();
+            String from = stdin.readLine();
 
             System.out.print("Subject: ");
-            System.out.flush();
+            String subject = stdin.readLine();
 
-            subject = stdin.readLine();
+            SimpleNNTPHeader header = new SimpleNNTPHeader(from, subject);
 
-            header = new SimpleNNTPHeader(from, subject);
-
-            System.out.print("Newsgroup: ");
-            System.out.flush();
-
-            newsgroup = stdin.readLine();
-            header.addNewsgroup(newsgroup);
-
-            while (true) {
-                System.out.print("Additional Newsgroup <Hit enter to end>: ");
-                System.out.flush();
-
-                newsgroup = stdin.readLine();
-                if (newsgroup == null) {
-                    break;
-                }
-
-                newsgroup = newsgroup.trim();
-
-                if (newsgroup.isEmpty()) {
-                    break;
-                }
-
-                header.addNewsgroup(newsgroup);
-            }
+            addNewsgroups(stdin, header);
 
             System.out.print("Organization: ");
-            System.out.flush();
-
-            organization = stdin.readLine();
-
-            System.out.print("References: ");
-            System.out.flush();
-
-            references = stdin.readLine();
-
+            String organization = stdin.readLine();
             if (organization != null && !organization.isEmpty()) {
                 header.addHeaderField("Organization", organization);
             }
 
+            System.out.print("References: ");
+            String references = stdin.readLine();
             if (references != null && !references.isEmpty()) {
                 header.addHeaderField("References", references);
             }
 
             header.addHeaderField("X-Newsreader", "NetComponents");
+            return header;
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        return null; // This won't be reached if exceptions are handled.
+    }
 
-            System.out.print("Filename: ");
-            System.out.flush();
+    private static void addNewsgroups(BufferedReader stdin, SimpleNNTPHeader header) throws IOException {
+        System.out.print("Newsgroup: ");
+        String newsgroup = stdin.readLine();
+        header.addNewsgroup(newsgroup);
 
-            fileName = stdin.readLine();
-
-            try {
-                fileReader = Files.newBufferedReader(Paths.get(fileName), Charset.defaultCharset());
-            } catch (final FileNotFoundException e) {
-                System.err.println("File not found. " + e.getMessage());
-                System.exit(1);
+        while (true) {
+            System.out.print("Additional Newsgroup <Hit enter to end>: ");
+            newsgroup = stdin.readLine();
+            if (newsgroup == null || newsgroup.trim().isEmpty()) {
+                break;
             }
+            header.addNewsgroup(newsgroup.trim());
+        }
+    }
 
-            client = new NNTPClient();
-            client.addProtocolCommandListener(PrintCommandListeners.sysOutPrintCommandListener());
+    private static String getFileName(BufferedReader stdin) {
+        System.out.print("Filename: ");
+        System.out.flush();
+        try {
+            return stdin.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+            return null; // This won't be reached if exceptions are handled.
+        }
+    }
 
+    private static void postArticle(String server, SimpleNNTPHeader header, Reader fileReader) {
+        NNTPClient client = new NNTPClient();
+        client.addProtocolCommandListener(PrintCommandListeners.sysOutPrintCommandListener());
+
+        try {
             client.connect(server);
 
             if (!NNTPReply.isPositiveCompletion(client.getReplyCode())) {
@@ -143,22 +136,19 @@ public final class PostMessage {
             }
 
             if (client.isAllowedToPost()) {
-                final Writer writer = client.postArticle();
-
-                if (writer != null) {
-                    writer.write(header.toString());
-                    Util.copyReader(fileReader, writer);
-                    writer.close();
-                    client.completePendingCommand();
+                try (Writer writer = client.postArticle()) {
+                    if (writer != null) {
+                        writer.write(header.toString());
+                        Util.copyReader(fileReader, writer);
+                        writer.close();
+                        client.completePendingCommand();
+                    }
                 }
             }
 
-            fileReader.close();
-
             client.logout();
-
             client.disconnect();
-        } catch (final IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);
         }

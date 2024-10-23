@@ -45,50 +45,28 @@ public final class POP3Mail {
         final String username = args[1];
         String password = args[2];
         // prompt for the password if necessary
-        try {
-            password = Utils.getPassword(username, password);
-        } catch (final IOException e1) {
-            System.err.println("Could not retrieve password: " + e1.getMessage());
-            return;
-        }
+        password = getPassword(username, password);
 
-        final String proto = args.length > 3 ? args[3] : null;
-        final boolean implicit = args.length > 4 && Boolean.parseBoolean(args[4]);
+        final POP3Client pop3 = initializePOP3Client(args);
+        final int port = getPort(arg0, pop3);
 
-        final POP3Client pop3;
-
-        if (proto != null) {
-            System.out.println("Using secure protocol: " + proto);
-            pop3 = new POP3SClient(proto, implicit);
-        } else {
-            pop3 = new POP3Client();
-        }
-
-        final int port;
-        if (arg0.length == 2) {
-            port = Integer.parseInt(arg0[1]);
-        } else {
-            port = pop3.getDefaultPort();
-        }
         System.out.println("Connecting to server " + server + " on " + port);
 
-        // We want to timeout if a response takes longer than 60 seconds
-        pop3.setDefaultTimeout(60000);
+        try {
+            connectAndProcessMail(pop3, server, username, password);
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-        // suppress login details
+    private static void connectAndProcessMail(final POP3Client pop3, final String server, final String username, String password) throws IOException {
+        pop3.setDefaultTimeout(60000);
         pop3.addProtocolCommandListener(PrintCommandListeners.sysOutPrintCommandListener());
 
         try {
             pop3.connect(server);
-        } catch (final IOException e) {
-            System.err.println("Could not connect to server.");
-            e.printStackTrace();
-            return;
-        }
-
-        try {
             if (!pop3.login(username, password)) {
-                System.err.println("Could not login to server.  Check password.");
+                System.err.println("Could not login to server. Check password.");
                 pop3.disconnect();
                 return;
             }
@@ -103,39 +81,65 @@ public final class POP3Mail {
 
             System.out.println("Status: " + status);
 
-            final POP3MessageInfo[] messages = pop3.listMessages();
+            processMessages(pop3);
 
-            if (messages == null) {
-                System.err.println("Could not retrieve message list.");
-                pop3.logout();
-                pop3.disconnect();
-                return;
-            }
-            if (messages.length == 0) {
-                System.out.println("No messages");
-                pop3.logout();
-                pop3.disconnect();
-                return;
-            }
+        } finally {
+            pop3.logout();
+            pop3.disconnect();
+        }
+    }
 
-            System.out.println("Message count: " + messages.length);
+    private static void processMessages(final POP3Client pop3) throws IOException {
+        final POP3MessageInfo[] messages = pop3.listMessages();
+        if (messages == null) {
+            System.err.println("Could not retrieve message list.");
+            return;
+        }
+        if (messages.length == 0) {
+            System.out.println("No messages");
+            return;
+        }
 
-            for (final POP3MessageInfo msginfo : messages) {
-                final BufferedReader reader = (BufferedReader) pop3.retrieveMessageTop(msginfo.number, 0);
+        System.out.println("Message count: " + messages.length);
 
+        for (final POP3MessageInfo msginfo : messages) {
+            try (BufferedReader reader = (BufferedReader) pop3.retrieveMessageTop(msginfo.number, 0)) {
                 if (reader == null) {
                     System.err.println("Could not retrieve message header.");
-                    pop3.logout();
-                    pop3.disconnect();
                     return;
                 }
                 printMessageInfo(reader, msginfo.number);
             }
+        }
+    }
 
-            pop3.logout();
-            pop3.disconnect();
+    private static String getPassword(final String username, String password) {
+        try {
+            return Utils.getPassword(username, password);
         } catch (final IOException e) {
-            e.printStackTrace();
+            System.err.println("Could not retrieve password: " + e.getMessage());
+            System.exit(1);
+            return null;  // Unreachable, but required for compilation.
+        }
+    }
+
+    private static POP3Client initializePOP3Client(final String[] args) {
+        final String proto = args.length > 3 ? args[3] : null;
+        final boolean implicit = args.length > 4 && Boolean.parseBoolean(args[4]);
+
+        if (proto != null) {
+            System.out.println("Using secure protocol: " + proto);
+            return new POP3SClient(proto, implicit);
+        } else {
+            return new POP3Client();
+        }
+    }
+
+    private static int getPort(final String[] arg0, final POP3Client pop3) {
+        if (arg0.length == 2) {
+            return Integer.parseInt(arg0[1]);
+        } else {
+            return pop3.getDefaultPort();
         }
     }
 
@@ -151,7 +155,6 @@ public final class POP3Mail {
                 subject = line.substring(9).trim();
             }
         }
-
         System.out.println(Integer.toString(id) + " From: " + from + "  Subject: " + subject);
     }
 }

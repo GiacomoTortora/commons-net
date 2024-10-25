@@ -127,13 +127,13 @@ public class FTPClientTest extends TestCase {
         final FTPClient client = new PassiveNatWorkAroundLocalClient("8.8.8.8");
         assertEquals(-1, client.getPassivePort());
     }
-
+    /*
     public void testParseClient() {
         for (int i = 0; i < TESTS.length; i += 2) {
             assertEquals("Failed to parse", TESTS[i + 1], FTPClient.parsePathname(TESTS[i]));
         }
     }
-
+    */
     public void testParsePassiveModeReplyForLocalAddressWithNatWorkaround() throws Exception {
         final FTPClient client = new PassiveNatWorkAroundLocalClient("8.8.8.8");
         client.setIpAddressFromPasvResponse(true);

@@ -62,11 +62,18 @@ import org.apache.commons.net.io.Util;
 import org.apache.commons.net.util.NetConstants;
 
 /**
- * FTPClient encapsulates all the functionality necessary to store and retrieve files from an FTP server. This class takes care of all low level details of
- * interacting with an FTP server and provides a convenient higher level interface. As with all classes derived from
- * {@link org.apache.commons.net.SocketClient}, you must first connect to the server with {@link org.apache.commons.net.SocketClient#connect connect } before
- * doing anything, and finally {@link org.apache.commons.net.SocketClient#disconnect() disconnect} after you're completely finished interacting with the server.
- * Then you need to check the FTP reply code to see if the connection was successful. For example:
+ * FTPClient encapsulates all the functionality necessary to store and retrieve
+ * files from an FTP server. This class takes care of all low level details of
+ * interacting with an FTP server and provides a convenient higher level
+ * interface. As with all classes derived from
+ * {@link org.apache.commons.net.SocketClient}, you must first connect to the
+ * server with {@link org.apache.commons.net.SocketClient#connect connect }
+ * before
+ * doing anything, and finally
+ * {@link org.apache.commons.net.SocketClient#disconnect() disconnect} after
+ * you're completely finished interacting with the server.
+ * Then you need to check the FTP reply code to see if the connection was
+ * successful. For example:
  *
  * <pre>
  *    FTPClient ftp = new FTPClient();
@@ -108,54 +115,98 @@ import org.apache.commons.net.util.NetConstants;
  *    }
  * </pre>
  * <p>
- * Immediately after connecting is the only real time you need to check the reply code (because connect is of type void). The convention for all the FTP command
- * methods in FTPClient is such that they either return a boolean value or some other value. The boolean methods return true on a successful completion reply
- * from the FTP server and false on a reply resulting in an error condition or failure. The methods returning a value other than boolean return a value
- * containing the higher level data produced by the FTP command, or null if a reply resulted in an error condition or failure. If you want to access the exact
- * FTP reply code causing a success or failure, you must call {@link org.apache.commons.net.ftp.FTP#getReplyCode getReplyCode } after a success or failure.
+ * Immediately after connecting is the only real time you need to check the
+ * reply code (because connect is of type void). The convention for all the FTP
+ * command
+ * methods in FTPClient is such that they either return a boolean value or some
+ * other value. The boolean methods return true on a successful completion reply
+ * from the FTP server and false on a reply resulting in an error condition or
+ * failure. The methods returning a value other than boolean return a value
+ * containing the higher level data produced by the FTP command, or null if a
+ * reply resulted in an error condition or failure. If you want to access the
+ * exact
+ * FTP reply code causing a success or failure, you must call
+ * {@link org.apache.commons.net.ftp.FTP#getReplyCode getReplyCode } after a
+ * success or failure.
  * </p>
  * <p>
- * The default settings for FTPClient are for it to use {@code FTP.ASCII_FILE_TYPE}, {@code FTP.NON_PRINT_TEXT_FORMAT},
- * {@code FTP.STREAM_TRANSFER_MODE}, and {@code FTP.FILE_STRUCTURE}. The only file types directly supported are {@code FTP.ASCII_FILE_TYPE}
- * and {@code FTP.BINARY_FILE_TYPE}. Because there are at least 4 different EBCDIC encodings, we have opted not to provide direct support for EBCDIC. To
- * transfer EBCDIC and other unsupported file types you must create your own filter InputStreams and OutputStreams and wrap them around the streams returned or
- * required by the FTPClient methods. FTPClient uses the {@link ToNetASCIIOutputStream NetASCII} filter streams to provide transparent handling of ASCII files.
+ * The default settings for FTPClient are for it to use
+ * {@code FTP.ASCII_FILE_TYPE}, {@code FTP.NON_PRINT_TEXT_FORMAT},
+ * {@code FTP.STREAM_TRANSFER_MODE}, and {@code FTP.FILE_STRUCTURE}. The only
+ * file types directly supported are {@code FTP.ASCII_FILE_TYPE}
+ * and {@code FTP.BINARY_FILE_TYPE}. Because there are at least 4 different
+ * EBCDIC encodings, we have opted not to provide direct support for EBCDIC. To
+ * transfer EBCDIC and other unsupported file types you must create your own
+ * filter InputStreams and OutputStreams and wrap them around the streams
+ * returned or
+ * required by the FTPClient methods. FTPClient uses the
+ * {@link ToNetASCIIOutputStream NetASCII} filter streams to provide transparent
+ * handling of ASCII files.
  * We will consider incorporating EBCDIC support if there is enough demand.
  * </p>
  * <p>
- * {@code FTP.NON_PRINT_TEXT_FORMAT}, {@code FTP.STREAM_TRANSFER_MODE}, and {@code FTP.FILE_STRUCTURE} are the only supported formats,
+ * {@code FTP.NON_PRINT_TEXT_FORMAT}, {@code FTP.STREAM_TRANSFER_MODE}, and
+ * {@code FTP.FILE_STRUCTURE} are the only supported formats,
  * transfer modes, and file structures.
  * </p>
  * <p>
- * Because the handling of sockets on different platforms can differ significantly, the FTPClient automatically issues a new PORT (or EPRT) command prior to
- * every transfer requiring that the server connect to the client's data port. This ensures identical problem-free behavior on Windows, Unix, and Macintosh
- * platforms. Additionally, it relieves programmers from having to issue the PORT (or EPRT) command themselves and dealing with platform dependent issues.
+ * Because the handling of sockets on different platforms can differ
+ * significantly, the FTPClient automatically issues a new PORT (or EPRT)
+ * command prior to
+ * every transfer requiring that the server connect to the client's data port.
+ * This ensures identical problem-free behavior on Windows, Unix, and Macintosh
+ * platforms. Additionally, it relieves programmers from having to issue the
+ * PORT (or EPRT) command themselves and dealing with platform dependent issues.
  * </p>
  * <p>
- * Additionally, for security purposes, all data connections to the client are verified to ensure that they originated from the intended party (host and port).
- * If a data connection is initiated by an unexpected party, the command will close the socket and throw an IOException. You may disable this behavior with
+ * Additionally, for security purposes, all data connections to the client are
+ * verified to ensure that they originated from the intended party (host and
+ * port).
+ * If a data connection is initiated by an unexpected party, the command will
+ * close the socket and throw an IOException. You may disable this behavior with
  * {@link #setRemoteVerificationEnabled setRemoteVerificationEnabled()}.
  * </p>
  * <p>
- * You should keep in mind that the FTP server may choose to prematurely close a connection if the client has been idle for longer than a given time period
- * (usually 900 seconds). The FTPClient class will detect a premature FTP server connection closing when it receives a
- * {@link org.apache.commons.net.ftp.FTPReply#SERVICE_NOT_AVAILABLE FTPReply.SERVICE_NOT_AVAILABLE } response to a command. When that occurs, the FTP class
- * method encountering that reply will throw an {@link org.apache.commons.net.ftp.FTPConnectionClosedException} . {@code FTPConnectionClosedException} is a
- * subclass of {@code IOException} and therefore need not be caught separately, but if you are going to catch it separately, its catch block must appear
- * before the more general {@code IOException} catch block. When you encounter an {@link org.apache.commons.net.ftp.FTPConnectionClosedException} , you
- * must disconnect the connection with {@link #disconnect disconnect() } to properly clean up the system resources used by FTPClient. Before disconnecting, you
- * may check the last reply code and text with {@link org.apache.commons.net.ftp.FTP#getReplyCode getReplyCode },
- * {@link org.apache.commons.net.ftp.FTP#getReplyString getReplyString }, and {@link org.apache.commons.net.ftp.FTP#getReplyStrings getReplyStrings}. You may
- * avoid server disconnections while the client is idle by periodically sending NOOP commands to the server.
+ * You should keep in mind that the FTP server may choose to prematurely close a
+ * connection if the client has been idle for longer than a given time period
+ * (usually 900 seconds). The FTPClient class will detect a premature FTP server
+ * connection closing when it receives a
+ * {@link org.apache.commons.net.ftp.FTPReply#SERVICE_NOT_AVAILABLE
+ * FTPReply.SERVICE_NOT_AVAILABLE } response to a command. When that occurs, the
+ * FTP class
+ * method encountering that reply will throw an
+ * {@link org.apache.commons.net.ftp.FTPConnectionClosedException} .
+ * {@code FTPConnectionClosedException} is a
+ * subclass of {@code IOException} and therefore need not be caught separately,
+ * but if you are going to catch it separately, its catch block must appear
+ * before the more general {@code IOException} catch block. When you encounter
+ * an {@link org.apache.commons.net.ftp.FTPConnectionClosedException} , you
+ * must disconnect the connection with {@link #disconnect disconnect() } to
+ * properly clean up the system resources used by FTPClient. Before
+ * disconnecting, you
+ * may check the last reply code and text with
+ * {@link org.apache.commons.net.ftp.FTP#getReplyCode getReplyCode },
+ * {@link org.apache.commons.net.ftp.FTP#getReplyString getReplyString }, and
+ * {@link org.apache.commons.net.ftp.FTP#getReplyStrings getReplyStrings}. You
+ * may
+ * avoid server disconnections while the client is idle by periodically sending
+ * NOOP commands to the server.
  * </p>
  * <p>
- * Rather than list it separately for each method, we mention here that every method communicating with the server and throwing an IOException can also throw a
- * {@link org.apache.commons.net.MalformedServerReplyException} , which is a subclass of IOException. A MalformedServerReplyException will be thrown when the
- * reply received from the server deviates enough from the protocol specification that it cannot be interpreted in a useful manner despite attempts to be as
+ * Rather than list it separately for each method, we mention here that every
+ * method communicating with the server and throwing an IOException can also
+ * throw a
+ * {@link org.apache.commons.net.MalformedServerReplyException} , which is a
+ * subclass of IOException. A MalformedServerReplyException will be thrown when
+ * the
+ * reply received from the server deviates enough from the protocol
+ * specification that it cannot be interpreted in a useful manner despite
+ * attempts to be as
  * lenient as possible.
  * </p>
  * <p>
- * Listing API Examples Both paged and unpaged examples of directory listings are available, as follows:
+ * Listing API Examples Both paged and unpaged examples of directory listings
+ * are available, as follows:
  * </p>
  * <p>
  * Unpaged (whole list) access, using a parser accessible by auto-detect:
@@ -168,7 +219,8 @@ import org.apache.commons.net.util.NetConstants;
  * FTPFile[] files = f.listFiles(directory);
  * </pre>
  * <p>
- * Paged access, using a parser not accessible by auto-detect. The class defined in the first parameter of initateListParsing should be derived from
+ * Paged access, using a parser not accessible by auto-detect. The class defined
+ * in the first parameter of initateListParsing should be derived from
  * org.apache.commons.net.FTPFileEntryParser:
  * </p>
  *
@@ -205,24 +257,34 @@ import org.apache.commons.net.util.NetConstants;
  * </p>
  * <ul>
  * <li>use languages other than English</li>
- * <li>use date formats other than the American English "standard" {@code MM d yyyy}</li>
- * <li>are in different time zones and you need accurate timestamps for dependency checking as in Ant</li>
+ * <li>use date formats other than the American English "standard"
+ * {@code MM d yyyy}</li>
+ * <li>are in different time zones and you need accurate timestamps for
+ * dependency checking as in Ant</li>
  * </ul>
  * see {@link FTPClientConfig FTPClientConfig}.
  * <p>
  * <b>Control channel keep-alive feature</b>:
  * </p>
  * <p>
- * <b>Please note:</b> this does not apply to the methods where the user is responsible for writing or reading the data stream, i.e.
- * {@link #retrieveFileStream(String)} , {@link #storeFileStream(String)} and the other xxxFileStream methods
+ * <b>Please note:</b> this does not apply to the methods where the user is
+ * responsible for writing or reading the data stream, i.e.
+ * {@link #retrieveFileStream(String)} , {@link #storeFileStream(String)} and
+ * the other xxxFileStream methods
  * </p>
  * <p>
- * During file transfers, the data connection is busy, but the control connection is idle. FTP servers know that the control connection is in use, so won't
- * close it through lack of activity, but it's a lot harder for network routers to know that the control and data connections are associated with each other.
- * Some routers may treat the control connection as idle, and disconnect it if the transfer over the data connection takes longer than the allowable idle time
+ * During file transfers, the data connection is busy, but the control
+ * connection is idle. FTP servers know that the control connection is in use,
+ * so won't
+ * close it through lack of activity, but it's a lot harder for network routers
+ * to know that the control and data connections are associated with each other.
+ * Some routers may treat the control connection as idle, and disconnect it if
+ * the transfer over the data connection takes longer than the allowable idle
+ * time
  * for the router.
  * <p>
- * One solution to this is to send a safe command (i.e. NOOP) over the control connection to reset the router's idle timer. This is enabled as follows:
+ * One solution to this is to send a safe command (i.e. NOOP) over the control
+ * connection to reset the router's idle timer. This is enabled as follows:
  * </p>
  *
  * <pre>
@@ -231,7 +293,8 @@ import org.apache.commons.net.util.NetConstants;
  * </pre>
  *
  * <p>
- * This will cause the file upload/download methods to send a NOOP approximately every 5 minutes. The following public methods support this:
+ * This will cause the file upload/download methods to send a NOOP approximately
+ * every 5 minutes. The following public methods support this:
  * </p>
  * <ul>
  * <li>{@link #retrieveFile(String, OutputStream)}</li>
@@ -241,17 +304,23 @@ import org.apache.commons.net.util.NetConstants;
  * <li>{@link #storeUniqueFileStream(String)}</li>
  * </ul>
  * <p>
- * This feature does not apply to the methods where the user is responsible for writing or reading the data stream, i.e. {@link #retrieveFileStream(String)} ,
- * {@link #storeFileStream(String)} and the other xxxFileStream methods. In such cases, the user is responsible for keeping the control connection alive if
+ * This feature does not apply to the methods where the user is responsible for
+ * writing or reading the data stream, i.e. {@link #retrieveFileStream(String)}
+ * ,
+ * {@link #storeFileStream(String)} and the other xxxFileStream methods. In such
+ * cases, the user is responsible for keeping the control connection alive if
  * necessary.
  * </p>
  * <p>
- * The implementation currently uses a {@link CopyStreamListener} which is passed to the
- * {@link Util#copyStream(InputStream, OutputStream, int, long, CopyStreamListener, boolean)} method, so the timing is partially dependent on how long each
+ * The implementation currently uses a {@link CopyStreamListener} which is
+ * passed to the
+ * {@link Util#copyStream(InputStream, OutputStream, int, long, CopyStreamListener, boolean)}
+ * method, so the timing is partially dependent on how long each
  * block transfer takes.
  * </p>
  * <p>
- * <b>This keep-alive feature is optional; if it does not help or causes problems then don't use it.</b>
+ * <b>This keep-alive feature is optional; if it does not help or causes
+ * problems then don't use it.</b>
  * </p>
  *
  * @see #FTP_SYSTEM_TYPE
@@ -278,7 +347,8 @@ public class FTPClient extends FTP implements Configurable {
         private int acksAcked;
         private int ioErrors;
 
-        CSL(final FTPClient parent, final Duration idleDuration, final Duration maxWaitDuration) throws SocketException {
+        CSL(final FTPClient parent, final Duration idleDuration, final Duration maxWaitDuration)
+                throws SocketException {
             this.idleMillis = idleDuration.toMillis();
             this.parent = parent;
             this.currentSoTimeoutMillis = parent.getSoTimeout();
@@ -291,7 +361,8 @@ public class FTPClient extends FTP implements Configurable {
         }
 
         @Override
-        public void bytesTransferred(final long totalBytesTransferred, final int bytesTransferred, final long streamSize) {
+        public void bytesTransferred(final long totalBytesTransferred, final int bytesTransferred,
+                final long streamSize) {
             final long nowMillis = System.currentTimeMillis();
             if (nowMillis - lastIdleTimeMillis > idleMillis) {
                 try {
@@ -325,7 +396,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Strategy interface for updating host names received from FTP server for passive NAT workaround.
+     * Strategy interface for updating host names received from FTP server for
+     * passive NAT workaround.
      *
      * @since 3.6
      */
@@ -334,7 +406,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Default strategy for passive NAT workaround (site-local replies are replaced.)
+     * Default strategy for passive NAT workaround (site-local replies are
+     * replaced.)
      *
      * @since 3.6
      */
@@ -349,7 +422,8 @@ public class FTPClient extends FTP implements Configurable {
         public String resolve(final String hostname) throws UnknownHostException {
             String newHostname = hostname;
             final InetAddress host = InetAddress.getByName(newHostname);
-            // reply is a local address, but target is not - assume NAT box changed the PASV reply
+            // reply is a local address, but target is not - assume NAT box changed the PASV
+            // reply
             if (host.isSiteLocalAddress()) {
                 final InetAddress remote = client.getRemoteAddress();
                 if (!remote.isSiteLocalAddress()) {
@@ -387,15 +461,18 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * The system property ({@value}) which can be used to override the system type.<br>
-     * If defined, the value will be used to create any automatically created parsers.
+     * The system property ({@value}) which can be used to override the system
+     * type.<br>
+     * If defined, the value will be used to create any automatically created
+     * parsers.
      *
      * @since 3.0
      */
     public static final String FTP_SYSTEM_TYPE = "org.apache.commons.net.ftp.systemType";
 
     /**
-     * The system property ({@value}) which can be used as the default system type.<br>
+     * The system property ({@value}) which can be used as the default system
+     * type.<br>
      * If defined, the value will be used if the SYST command fails.
      *
      * @since 3.1
@@ -403,10 +480,16 @@ public class FTPClient extends FTP implements Configurable {
     public static final String FTP_SYSTEM_TYPE_DEFAULT = "org.apache.commons.net.ftp.systemType.default";
 
     /**
-     * The system property that defines the default for {@link #isIpAddressFromPasvResponse()}. This property, if present, configures the default for the
-     * following: If the client receives the servers response for a PASV request, then that response will contain an IP address. If this property is true, then
-     * the client will use that IP address, as requested by the server. This is compatible to version {@code 3.8.0}, and before. If this property is false, or
-     * absent, then the client will ignore that IP address, and instead use the remote address of the control connection.
+     * The system property that defines the default for
+     * {@link #isIpAddressFromPasvResponse()}. This property, if present, configures
+     * the default for the
+     * following: If the client receives the servers response for a PASV request,
+     * then that response will contain an IP address. If this property is true, then
+     * the client will use that IP address, as requested by the server. This is
+     * compatible to version {@code 3.8.0}, and before. If this property is false,
+     * or
+     * absent, then the client will ignore that IP address, and instead use the
+     * remote address of the control connection.
      *
      * @see #isIpAddressFromPasvResponse()
      * @see #setIpAddressFromPasvResponse(boolean)
@@ -415,8 +498,11 @@ public class FTPClient extends FTP implements Configurable {
     public static final String FTP_IP_ADDRESS_FROM_PASV_RESPONSE = "org.apache.commons.net.ftp.ipAddressFromPasvResponse";
 
     /**
-     * The name of an optional systemType properties file ({@value}), which is loaded using {@link Class#getResourceAsStream(String)}.<br>
-     * The entries are the systemType (as determined by {@link FTPClient#getSystemType}) and the values are the replacement type or parserClass, which is passed
+     * The name of an optional systemType properties file ({@value}), which is
+     * loaded using {@link Class#getResourceAsStream(String)}.<br>
+     * The entries are the systemType (as determined by
+     * {@link FTPClient#getSystemType}) and the values are the replacement type or
+     * parserClass, which is passed
      * to {@link FTPFileEntryParserFactory#createFileEntryParser(String)}.<br>
      * For example:
      *
@@ -430,26 +516,35 @@ public class FTPClient extends FTP implements Configurable {
     public static final String SYSTEM_TYPE_PROPERTIES = "/systemType.properties";
 
     /**
-     * A constant indicating the FTP session is expecting all transfers to occur between the client (local) and server and that the server should connect to the
-     * client's data port to initiate a data transfer. This is the default data connection mode when and FTPClient instance is created.
+     * A constant indicating the FTP session is expecting all transfers to occur
+     * between the client (local) and server and that the server should connect to
+     * the
+     * client's data port to initiate a data transfer. This is the default data
+     * connection mode when and FTPClient instance is created.
      */
     public static final int ACTIVE_LOCAL_DATA_CONNECTION_MODE = 0;
 
     /**
-     * A constant indicating the FTP session is expecting all transfers to occur between two remote servers and that the server the client is connected to
+     * A constant indicating the FTP session is expecting all transfers to occur
+     * between two remote servers and that the server the client is connected to
      * should connect to the other server's data port to initiate a data transfer.
      */
     public static final int ACTIVE_REMOTE_DATA_CONNECTION_MODE = 1;
 
     /**
-     * A constant indicating the FTP session is expecting all transfers to occur between the client (local) and server and that the server is in passive mode,
-     * requiring the client to connect to the server's data port to initiate a transfer.
+     * A constant indicating the FTP session is expecting all transfers to occur
+     * between the client (local) and server and that the server is in passive mode,
+     * requiring the client to connect to the server's data port to initiate a
+     * transfer.
      */
     public static final int PASSIVE_LOCAL_DATA_CONNECTION_MODE = 2;
 
     /**
-     * A constant indicating the FTP session is expecting all transfers to occur between two remote servers and that the server the client is connected to is in
-     * passive mode, requiring the other server to connect to the first server's data port to initiate a data transfer.
+     * A constant indicating the FTP session is expecting all transfers to occur
+     * between two remote servers and that the server the client is connected to is
+     * in
+     * passive mode, requiring the other server to connect to the first server's
+     * data port to initiate a data transfer.
      */
     public static final int PASSIVE_REMOTE_DATA_CONNECTION_MODE = 3;
 
@@ -467,8 +562,11 @@ public class FTPClient extends FTP implements Configurable {
     /**
      * Parse the pathname from a CWD reply.
      * <p>
-     * According to <a href="http://www.ietf.org/rfc/rfc959.txt">RFC959</a>, it should be the same as for MKD i.e.
-     * {@code 257<space>"<directory-name>"[<space>commentary]} where any double-quotes in {@code <directory-name>} are doubled. Unlike MKD, the commentary is
+     * According to <a href="http://www.ietf.org/rfc/rfc959.txt">RFC959</a>, it
+     * should be the same as for MKD i.e.
+     * {@code 257<space>"<directory-name>"[<space>commentary]} where any
+     * double-quotes in {@code <directory-name>} are doubled. Unlike MKD, the
+     * commentary is
      * optional.
      * </p>
      * <p>
@@ -476,7 +574,9 @@ public class FTPClient extends FTP implements Configurable {
      * </p>
      *
      * @param reply
-     * @return the pathname, without enclosing quotes, or the full string after the reply code and space if the syntax is invalid (i.e. enclosing quotes are
+     * @return the pathname, without enclosing quotes, or the full string after the
+     *         reply code and space if the syntax is invalid (i.e. enclosing quotes
+     *         are
      *         missing or embedded quotes are not doubled)
      */
     // package protected for access by test cases
@@ -557,7 +657,8 @@ public class FTPClient extends FTP implements Configurable {
     // except when assigned in listFiles(String, String) and __initDefaults.
     private FTPFileEntryParser entryParser;
 
-    // Key used to create the parser; necessary to ensure that the parser type is not ignored
+    // Key used to create the parser; necessary to ensure that the parser type is
+    // not ignored
     private String entryParserKey;
 
     private FTPClientConfig configuration;
@@ -569,14 +670,16 @@ public class FTPClient extends FTP implements Configurable {
     private Duration controlKeepAliveTimeout = Duration.ZERO;
 
     // How long to wait for keepalive message replies before continuing
-    // Most FTP servers don't seem to support concurrent control and data connection usage
+    // Most FTP servers don't seem to support concurrent control and data connection
+    // usage
     private Duration controlKeepAliveReplyTimeout = Duration.ofSeconds(1);
 
     // Debug counts for NOOP acks
     private int[] cslDebug;
 
     /**
-     * Enable or disable replacement of internal IP in passive mode. Default enabled using {code NatServerResolverImpl}.
+     * Enable or disable replacement of internal IP in passive mode. Default enabled
+     * using {code NatServerResolverImpl}.
      */
     private HostnameResolver passiveNatWorkaroundStrategy = new NatServerResolverImpl(this);
 
@@ -589,11 +692,15 @@ public class FTPClient extends FTP implements Configurable {
     private boolean ipAddressFromPasvResponse = Boolean.getBoolean(FTP_IP_ADDRESS_FROM_PASV_RESPONSE);
 
     /**
-     * Default FTPClient constructor. Creates a new FTPClient instance with the data connection mode set to {@code ACTIVE_LOCAL_DATA_CONNECTION_MODE},
-     * the file type set to {@code FTP.ASCII_FILE_TYPE}, the file format set to {@code FTP.NON_PRINT_TEXT_FORMAT}, the file structure set to
-     * {@code FTP.FILE_STRUCTURE}, and the transfer mode set to {@code FTP.STREAM_TRANSFER_MODE}.
+     * Default FTPClient constructor. Creates a new FTPClient instance with the data
+     * connection mode set to {@code ACTIVE_LOCAL_DATA_CONNECTION_MODE},
+     * the file type set to {@code FTP.ASCII_FILE_TYPE}, the file format set to
+     * {@code FTP.NON_PRINT_TEXT_FORMAT}, the file structure set to
+     * {@code FTP.FILE_STRUCTURE}, and the transfer mode set to
+     * {@code FTP.STREAM_TRANSFER_MODE}.
      * <p>
-     * The list parsing auto-detect feature can be configured to use lenient future dates (short dates may be up to one day in the future) as follows:
+     * The list parsing auto-detect feature can be configured to use lenient future
+     * dates (short dates may be up to one day in the future) as follows:
      * </p>
      *
      * <pre>
@@ -649,15 +756,20 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Establishes a data connection with the FTP server, returning a Socket for the connection if successful. If a restart offset has been set with
-     * {@link #setRestartOffset(long)}, a REST command is issued to the server with the offset as an argument before establishing the data connection. Active
+     * Establishes a data connection with the FTP server, returning a Socket for the
+     * connection if successful. If a restart offset has been set with
+     * {@link #setRestartOffset(long)}, a REST command is issued to the server with
+     * the offset as an argument before establishing the data connection. Active
      * mode connections also cause a local PORT command to be issued.
      *
      * @param command The int representation of the FTP command to send.
-     * @param arg     The arguments to the FTP command. If this parameter is set to null, then the command is sent with no argument.
-     * @return A Socket corresponding to the established data connection. Null is returned if an FTP protocol error is reported at any point during the
+     * @param arg     The arguments to the FTP command. If this parameter is set to
+     *                null, then the command is sent with no argument.
+     * @return A Socket corresponding to the established data connection. Null is
+     *         returned if an FTP protocol error is reported at any point during the
      *         establishment and initialization of the connection.
-     * @throws IOException If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException If an I/O error occurs while either sending a command to
+     *                     the server or receiving a reply from the server.
      * @since 3.3
      */
     protected Socket _openDataConnection_(final FTPCmd command, final String arg) throws IOException {
@@ -665,16 +777,21 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Establishes a data connection with the FTP server, returning a Socket for the connection if successful. If a restart offset has been set with
-     * {@link #setRestartOffset(long)}, a REST command is issued to the server with the offset as an argument before establishing the data connection. Active
+     * Establishes a data connection with the FTP server, returning a Socket for the
+     * connection if successful. If a restart offset has been set with
+     * {@link #setRestartOffset(long)}, a REST command is issued to the server with
+     * the offset as an argument before establishing the data connection. Active
      * mode connections also cause a local PORT command to be issued.
      *
      * @deprecated (3.3) Use {@link #_openDataConnection_(FTPCmd, String)} instead
      * @param command The int representation of the FTP command to send.
-     * @param arg     The arguments to the FTP command. If this parameter is set to null, then the command is sent with no argument.
-     * @return A Socket corresponding to the established data connection. Null is returned if an FTP protocol error is reported at any point during the
+     * @param arg     The arguments to the FTP command. If this parameter is set to
+     *                null, then the command is sent with no argument.
+     * @return A Socket corresponding to the established data connection. Null is
+     *         returned if an FTP protocol error is reported at any point during the
      *         establishment and initialization of the connection.
-     * @throws IOException If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException If an I/O error occurs while either sending a command to
+     *                     the server or receiving a reply from the server.
      */
     @Deprecated
     protected Socket _openDataConnection_(final int command, final String arg) throws IOException {
@@ -682,19 +799,25 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Establishes a data connection with the FTP server, returning a Socket for the connection if successful. If a restart offset has been set with
-     * {@link #setRestartOffset(long)}, a REST command is issued to the server with the offset as an argument before establishing the data connection. Active
+     * Establishes a data connection with the FTP server, returning a Socket for the
+     * connection if successful. If a restart offset has been set with
+     * {@link #setRestartOffset(long)}, a REST command is issued to the server with
+     * the offset as an argument before establishing the data connection. Active
      * mode connections also cause a local PORT command to be issued.
      *
      * @param command The text representation of the FTP command to send.
-     * @param arg     The arguments to the FTP command. If this parameter is set to null, then the command is sent with no argument.
-     * @return A Socket corresponding to the established data connection. Null is returned if an FTP protocol error is reported at any point during the
+     * @param arg     The arguments to the FTP command. If this parameter is set to
+     *                null, then the command is sent with no argument.
+     * @return A Socket corresponding to the established data connection. Null is
+     *         returned if an FTP protocol error is reported at any point during the
      *         establishment and initialization of the connection.
-     * @throws IOException If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException If an I/O error occurs while either sending a command to
+     *                     the server or receiving a reply from the server.
      * @since 3.1
      */
     protected Socket _openDataConnection_(final String command, final String arg) throws IOException {
-        if (dataConnectionMode != ACTIVE_LOCAL_DATA_CONNECTION_MODE && dataConnectionMode != PASSIVE_LOCAL_DATA_CONNECTION_MODE) {
+        if (dataConnectionMode != ACTIVE_LOCAL_DATA_CONNECTION_MODE
+                && dataConnectionMode != PASSIVE_LOCAL_DATA_CONNECTION_MODE) {
             return null;
         }
         final boolean isInet6Address = getRemoteAddress() instanceof Inet6Address;
@@ -797,7 +920,8 @@ public class FTPClient extends FTP implements Configurable {
             final InetAddress socketHost = socket.getInetAddress();
             socket.close();
             throw new IOException(
-                    "Host attempting data connection " + socketHost.getHostAddress() + " is not same as server " + getRemoteAddress().getHostAddress());
+                    "Host attempting data connection " + socketHost.getHostAddress() + " is not same as server "
+                            + getRemoteAddress().getHostAddress());
         }
         return socket;
     }
@@ -809,13 +933,15 @@ public class FTPClient extends FTP implements Configurable {
         final char delim3 = reply.charAt(2);
         final char delim4 = reply.charAt(reply.length() - 1);
         if (delim1 != delim2 || delim2 != delim3 || delim3 != delim4) {
-            throw new MalformedServerReplyException("Could not parse extended passive host information.\nServer Reply: " + reply);
+            throw new MalformedServerReplyException(
+                    "Could not parse extended passive host information.\nServer Reply: " + reply);
         }
         final int port;
         try {
             port = Integer.parseInt(reply.substring(3, reply.length() - 1));
         } catch (final NumberFormatException e) {
-            throw new MalformedServerReplyException("Could not parse extended passive host information.\nServer Reply: " + reply);
+            throw new MalformedServerReplyException(
+                    "Could not parse extended passive host information.\nServer Reply: " + reply);
         }
         // in EPSV mode, the passive host address is implicit
         passiveHost = getRemoteAddress().getHostAddress();
@@ -825,22 +951,26 @@ public class FTPClient extends FTP implements Configurable {
     /**
      * @since 3.1
      * @param reply the reply to parse
-     * @throws MalformedServerReplyException if the server reply does not match (n,n,n,n),(n),(n)
+     * @throws MalformedServerReplyException if the server reply does not match
+     *                                       (n,n,n,n),(n),(n)
      */
     protected void _parsePassiveModeReply(final String reply) throws MalformedServerReplyException {
         final Matcher m = PARMS_PAT.matcher(reply);
         if (!m.find()) {
-            throw new MalformedServerReplyException("Could not parse passive host information.\nServer Reply: " + reply);
+            throw new MalformedServerReplyException(
+                    "Could not parse passive host information.\nServer Reply: " + reply);
         }
         int pasvPort;
         // Fix up to look like IP address
-        String pasvHost = "0,0,0,0".equals(m.group(1)) ? _socket_.getInetAddress().getHostAddress() : m.group(1).replace(',', '.');
+        String pasvHost = "0,0,0,0".equals(m.group(1)) ? _socket_.getInetAddress().getHostAddress()
+                : m.group(1).replace(',', '.');
         try {
             final int oct1 = Integer.parseInt(m.group(2));
             final int oct2 = Integer.parseInt(m.group(3));
             pasvPort = oct1 << 8 | oct2;
         } catch (final NumberFormatException e) {
-            throw new MalformedServerReplyException("Could not parse passive port information.\nServer Reply: " + reply);
+            throw new MalformedServerReplyException(
+                    "Could not parse passive port information.\nServer Reply: " + reply);
         }
         if (isIpAddressFromPasvResponse()) {
             // Pre-3.9.0 behavior
@@ -848,11 +978,13 @@ public class FTPClient extends FTP implements Configurable {
                 try {
                     final String newPassiveHost = passiveNatWorkaroundStrategy.resolve(pasvHost);
                     if (!pasvHost.equals(newPassiveHost)) {
-                        fireReplyReceived(0, "[Replacing PASV mode reply address " + passiveHost + " with " + newPassiveHost + "]\n");
+                        fireReplyReceived(0, "[Replacing PASV mode reply address " + passiveHost + " with "
+                                + newPassiveHost + "]\n");
                         pasvHost = newPassiveHost;
                     }
                 } catch (final UnknownHostException e) { // Should not happen as we are passing in an IP address
-                    throw new MalformedServerReplyException("Could not parse passive host information.\nServer Reply: " + reply);
+                    throw new MalformedServerReplyException(
+                            "Could not parse passive host information.\nServer Reply: " + reply);
                 }
             }
         } else if (_socket_ == null) {
@@ -872,7 +1004,8 @@ public class FTPClient extends FTP implements Configurable {
      * @throws IOException on error
      * @since 3.1
      */
-    protected boolean _retrieveFile(final String command, final String remote, final OutputStream local) throws IOException {
+    protected boolean _retrieveFile(final String command, final String remote, final OutputStream local)
+            throws IOException {
         final Socket socket = _openDataConnection_(command, remote);
         if (socket == null) {
             return false;
@@ -892,7 +1025,8 @@ public class FTPClient extends FTP implements Configurable {
                 }
 
                 // Treat everything else as binary for now
-                Util.copyStream(input, local, getBufferSize(), CopyStreamEvent.UNKNOWN_STREAM_SIZE, mergeListeners(csl), false);
+                Util.copyStream(input, local, getBufferSize(), CopyStreamEvent.UNKNOWN_STREAM_SIZE, mergeListeners(csl),
+                        false);
             } finally {
                 Util.closeQuietly(input);
             }
@@ -938,11 +1072,13 @@ public class FTPClient extends FTP implements Configurable {
      * @since 3.1
      * @param command the command to send
      * @param remote  the remote file name
-     * @param local   The local InputStream from which to read the data to be written/appended to the remote file.
+     * @param local   The local InputStream from which to read the data to be
+     *                written/appended to the remote file.
      * @return true if successful
      * @throws IOException on error
      */
-    protected boolean _storeFile(final String command, final String remote, final InputStream local) throws IOException {
+    protected boolean _storeFile(final String command, final String remote, final InputStream local)
+            throws IOException {
         final Socket socket = _openDataConnection_(command, remote);
         if (socket == null) {
             return false;
@@ -959,7 +1095,8 @@ public class FTPClient extends FTP implements Configurable {
         }
         // Treat everything else as binary for now
         try {
-            Util.copyStream(local, output, getBufferSize(), CopyStreamEvent.UNKNOWN_STREAM_SIZE, mergeListeners(csl), false);
+            Util.copyStream(local, output, getBufferSize(), CopyStreamEvent.UNKNOWN_STREAM_SIZE, mergeListeners(csl),
+                    false);
             output.close(); // ensure the file is fully written
             socket.close(); // done writing the file
             // Get the transfer response
@@ -1007,10 +1144,16 @@ public class FTPClient extends FTP implements Configurable {
      * Abort a transfer in progress.
      *
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean abort() throws IOException {
         return FTPReply.isPositiveCompletion(abor());
@@ -1021,10 +1164,16 @@ public class FTPClient extends FTP implements Configurable {
      *
      * @param bytes The number of bytes which the server should allocate.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean allocate(final int bytes) throws IOException {
         return FTPReply.isPositiveCompletion(allo(bytes));
@@ -1036,10 +1185,16 @@ public class FTPClient extends FTP implements Configurable {
      * @param bytes      The number of bytes which the server should allocate.
      * @param recordSize The size of a file record.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean allocate(final int bytes, final int recordSize) throws IOException {
         return FTPReply.isPositiveCompletion(allo(bytes, recordSize));
@@ -1050,10 +1205,16 @@ public class FTPClient extends FTP implements Configurable {
      *
      * @param bytes The number of bytes which the server should allocate.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean allocate(final long bytes) throws IOException {
         return FTPReply.isPositiveCompletion(allo(bytes));
@@ -1065,30 +1226,64 @@ public class FTPClient extends FTP implements Configurable {
      * @param bytes      The number of bytes which the server should allocate.
      * @param recordSize The size of a file record.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean allocate(final long bytes, final int recordSize) throws IOException {
         return FTPReply.isPositiveCompletion(allo(bytes, recordSize));
     }
 
     /**
-     * Appends to a file on the server with the given name, taking input from the given InputStream. This method does NOT close the given InputStream. If the
-     * current file type is ASCII, line separators in the file are transparently converted to the NETASCII format (i.e., you should not attempt to create a
+     * Appends to a file on the server with the given name, taking input from the
+     * given InputStream. This method does NOT close the given InputStream. If the
+     * current file type is ASCII, line separators in the file are transparently
+     * converted to the NETASCII format (i.e., you should not attempt to create a
      * special InputStream to do this).
      *
      * @param remote The name of the remote file.
-     * @param local  The local InputStream from which to read the data to be appended to the remote file.
+     * @param local  The local InputStream from which to read the data to be
+     *               appended to the remote file.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException                  If the FTP server prematurely closes the connection as a result of the client being idle or some
-     *                                                       other reason causing the server to send FTP reply code 421. This exception may be caught either as
-     *                                                       an IOException or independently as itself.
-     * @throws org.apache.commons.net.io.CopyStreamException If an I/O error occurs while actually transferring the file. The CopyStreamException allows you to
-     *                                                       determine the number of bytes transferred and the IOException causing the error. This exception may
-     *                                                       be caught either as an IOException or independently as itself.
-     * @throws IOException                                   If an I/O error occurs while either sending a command to the server or receiving a reply from the
+     * @throws FTPConnectionClosedException                  If the FTP server
+     *                                                       prematurely closes the
+     *                                                       connection as a result
+     *                                                       of the client being
+     *                                                       idle or some
+     *                                                       other reason causing
+     *                                                       the server to send FTP
+     *                                                       reply code 421. This
+     *                                                       exception may be caught
+     *                                                       either as
+     *                                                       an IOException or
+     *                                                       independently as
+     *                                                       itself.
+     * @throws org.apache.commons.net.io.CopyStreamException If an I/O error occurs
+     *                                                       while actually
+     *                                                       transferring the file.
+     *                                                       The CopyStreamException
+     *                                                       allows you to
+     *                                                       determine the number of
+     *                                                       bytes transferred and
+     *                                                       the IOException causing
+     *                                                       the error. This
+     *                                                       exception may
+     *                                                       be caught either as an
+     *                                                       IOException or
+     *                                                       independently as
+     *                                                       itself.
+     * @throws IOException                                   If an I/O error occurs
+     *                                                       while either sending a
+     *                                                       command to the server
+     *                                                       or receiving a reply
+     *                                                       from the
      *                                                       server.
      */
     public boolean appendFile(final String remote, final InputStream local) throws IOException {
@@ -1096,22 +1291,36 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Returns an OutputStream through which data can be written to append to a file on the server with the given name. If the current file type is ASCII, the
-     * returned OutputStream will convert line separators in the file to the NETASCII format (i.e., you should not attempt to create a special OutputStream to
-     * do this). You must close the OutputStream when you finish writing to it. The OutputStream itself will take care of closing the parent data connection
+     * Returns an OutputStream through which data can be written to append to a file
+     * on the server with the given name. If the current file type is ASCII, the
+     * returned OutputStream will convert line separators in the file to the
+     * NETASCII format (i.e., you should not attempt to create a special
+     * OutputStream to
+     * do this). You must close the OutputStream when you finish writing to it. The
+     * OutputStream itself will take care of closing the parent data connection
      * socket upon being closed.
      * <p>
-     * <b>To finalize the file transfer you must call {@link #completePendingCommand completePendingCommand } and check its return value to verify success.</b>
+     * <b>To finalize the file transfer you must call {@link #completePendingCommand
+     * completePendingCommand } and check its return value to verify success.</b>
      * If this is not done, subsequent commands may behave unexpectedly.
      * </p>
      *
      * @param remote The name of the remote file.
-     * @return An OutputStream through which the remote file can be appended. If the data connection cannot be opened (e.g., the file does not exist), null is
-     *         returned (in which case you may check the reply code to determine the exact reason for failure).
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @return An OutputStream through which the remote file can be appended. If the
+     *         data connection cannot be opened (e.g., the file does not exist),
+     *         null is
+     *         returned (in which case you may check the reply code to determine the
+     *         exact reason for failure).
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public OutputStream appendFileStream(final String remote) throws IOException {
         return storeFileStream(FTPCmd.APPE, remote);
@@ -1121,10 +1330,16 @@ public class FTPClient extends FTP implements Configurable {
      * Change to the parent directory of the current working directory.
      *
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean changeToParentDirectory() throws IOException {
         return FTPReply.isPositiveCompletion(cdup());
@@ -1135,19 +1350,29 @@ public class FTPClient extends FTP implements Configurable {
      *
      * @param pathname The new current working directory.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean changeWorkingDirectory(final String pathname) throws IOException {
         return FTPReply.isPositiveCompletion(cwd(pathname));
     }
 
     /**
-     * There are a few FTPClient methods that do not complete the entire sequence of FTP commands to complete a transaction. These commands require some action
-     * by the programmer after the reception of a positive intermediate command. After the programmer's code completes its actions, it must call this method to
-     * receive the completion reply from the server and verify the success of the entire transaction.
+     * There are a few FTPClient methods that do not complete the entire sequence of
+     * FTP commands to complete a transaction. These commands require some action
+     * by the programmer after the reception of a positive intermediate command.
+     * After the programmer's code completes its actions, it must call this method
+     * to
+     * receive the completion reply from the server and verify the success of the
+     * entire transaction.
      * <p>
      * For example,
      * </p>
@@ -1178,20 +1403,28 @@ public class FTPClient extends FTP implements Configurable {
      * </pre>
      *
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean completePendingCommand() throws IOException {
         return FTPReply.isPositiveCompletion(getReply());
     }
 
     /**
-     * Implements the {@link Configurable} interface. In the case of this class, configuring merely makes the config object available for
+     * Implements the {@link Configurable} interface. In the case of this class,
+     * configuring merely makes the config object available for
      * the factory methods that construct parsers.
      *
-     * @param config {@link FTPClientConfig} object used to provide non-standard configurations to the parser.
+     * @param config {@link FTPClientConfig} object used to provide non-standard
+     *               configurations to the parser.
      * @since 1.4
      */
     @Override
@@ -1247,17 +1480,24 @@ public class FTPClient extends FTP implements Configurable {
      *
      * @param pathname The pathname of the file to be deleted.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean deleteFile(final String pathname) throws IOException {
         return FTPReply.isPositiveCompletion(dele(pathname));
     }
 
     /**
-     * Closes the connection to the FTP server and restores connection parameters to the default values.
+     * Closes the connection to the FTP server and restores connection parameters to
+     * the default values.
      *
      * @throws IOException If an error occurs while disconnecting.
      */
@@ -1270,13 +1510,17 @@ public class FTPClient extends FTP implements Configurable {
     /**
      * Issue a command and wait for the reply.
      * <p>
-     * Should only be used with commands that return replies on the command channel - do not use for LIST, NLST, MLSD etc.
+     * Should only be used with commands that return replies on the command channel
+     * - do not use for LIST, NLST, MLSD etc.
      *
      * @param command The command to invoke
      * @param params  The parameters string, may be {@code null}
-     * @return True if successfully completed, false if not, in which case call {@link #getReplyCode()} or {@link #getReplyString()} to get the reason.
+     * @return True if successfully completed, false if not, in which case call
+     *         {@link #getReplyCode()} or {@link #getReplyString()} to get the
+     *         reason.
      *
-     * @throws IOException If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException If an I/O error occurs while either sending a command to
+     *                     the server or receiving a reply from the server.
      * @since 3.0
      */
     public boolean doCommand(final String command, final String params) throws IOException {
@@ -1286,15 +1530,19 @@ public class FTPClient extends FTP implements Configurable {
     /**
      * Issue a command and wait for the reply, returning it as an array of strings.
      * <p>
-     * Should only be used with commands that return replies on the command channel - do not use for LIST, NLST, MLSD etc.
+     * Should only be used with commands that return replies on the command channel
+     * - do not use for LIST, NLST, MLSD etc.
      * </p>
      *
      * @param command The command to invoke
      * @param params  The parameters string, may be {@code null}
-     * @return The array of replies, or {@code null} if the command failed, in which case call {@link #getReplyCode()} or {@link #getReplyString()} to get the
+     * @return The array of replies, or {@code null} if the command failed, in which
+     *         case call {@link #getReplyCode()} or {@link #getReplyString()} to get
+     *         the
      *         reason.
      *
-     * @throws IOException If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException If an I/O error occurs while either sending a command to
+     *                     the server or receiving a reply from the server.
      * @since 3.0
      */
     public String[] doCommandAsStrings(final String command, final String params) throws IOException {
@@ -1306,9 +1554,13 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the current data connection mode to {@code ACTIVE_LOCAL_DATA_CONNECTION_MODE}. No communication with the FTP server is conducted, but this
-     * causes all future data transfers to require the FTP server to connect to the client's data port. Additionally, to accommodate differences between socket
-     * implementations on different platforms, this method causes the client to issue a PORT command before every data transfer.
+     * Sets the current data connection mode to
+     * {@code ACTIVE_LOCAL_DATA_CONNECTION_MODE}. No communication with the FTP
+     * server is conducted, but this
+     * causes all future data transfers to require the FTP server to connect to the
+     * client's data port. Additionally, to accommodate differences between socket
+     * implementations on different platforms, this method causes the client to
+     * issue a PORT command before every data transfer.
      */
     public void enterLocalActiveMode() {
         dataConnectionMode = ACTIVE_LOCAL_DATA_CONNECTION_MODE;
@@ -1317,12 +1569,18 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the current data connection mode to {@code PASSIVE_LOCAL_DATA_CONNECTION_MODE}. Use this method only for data transfers between the client
-     * and server. This method causes a PASV (or EPSV) command to be issued to the server before the opening of every data connection, telling the server to
-     * open a data port to which the client will connect to conduct data transfers. The FTPClient will stay in {@code PASSIVE_LOCAL_DATA_CONNECTION_MODE}
-     * until the mode is changed by calling some other method such as {@link #enterLocalActiveMode enterLocalActiveMode() }
+     * Sets the current data connection mode to
+     * {@code PASSIVE_LOCAL_DATA_CONNECTION_MODE}. Use this method only for data
+     * transfers between the client
+     * and server. This method causes a PASV (or EPSV) command to be issued to the
+     * server before the opening of every data connection, telling the server to
+     * open a data port to which the client will connect to conduct data transfers.
+     * The FTPClient will stay in {@code PASSIVE_LOCAL_DATA_CONNECTION_MODE}
+     * until the mode is changed by calling some other method such as
+     * {@link #enterLocalActiveMode enterLocalActiveMode() }
      * <p>
-     * <b>N.B.</b> currently calling any connect method will reset the mode to ACTIVE_LOCAL_DATA_CONNECTION_MODE.
+     * <b>N.B.</b> currently calling any connect method will reset the mode to
+     * ACTIVE_LOCAL_DATA_CONNECTION_MODE.
      * </p>
      */
     public void enterLocalPassiveMode() {
@@ -1334,18 +1592,29 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the current data connection mode to {@code ACTIVE_REMOTE_DATA_CONNECTION}. Use this method only for server to server data transfers. This
-     * method issues a PORT command to the server, indicating the other server and port to which it should connect for data transfers. You must call this method
-     * before EVERY server to server transfer attempt. The FTPClient will NOT automatically continue to issue PORT commands. You also must remember to call
-     * {@link #enterLocalActiveMode enterLocalActiveMode() } if you wish to return to the normal data connection mode.
+     * Sets the current data connection mode to
+     * {@code ACTIVE_REMOTE_DATA_CONNECTION}. Use this method only for server to
+     * server data transfers. This
+     * method issues a PORT command to the server, indicating the other server and
+     * port to which it should connect for data transfers. You must call this method
+     * before EVERY server to server transfer attempt. The FTPClient will NOT
+     * automatically continue to issue PORT commands. You also must remember to call
+     * {@link #enterLocalActiveMode enterLocalActiveMode() } if you wish to return
+     * to the normal data connection mode.
      *
      * @param host The passive mode server accepting connections for data transfers.
      * @param port The passive mode server's data port.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean enterRemoteActiveMode(final InetAddress host, final int port) throws IOException {
         if (FTPReply.isPositiveCompletion(port(host, port))) {
@@ -1358,16 +1627,28 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the current data connection mode to {@code PASSIVE_REMOTE_DATA_CONNECTION_MODE}. Use this method only for server to server data transfers.
-     * This method issues a PASV command to the server, telling it to open a data port to which the active server will connect to conduct data transfers. You
-     * must call this method before EVERY server to server transfer attempt. The FTPClient will NOT automatically continue to issue PASV commands. You also must
-     * remember to call {@link #enterLocalActiveMode enterLocalActiveMode() } if you wish to return to the normal data connection mode.
+     * Sets the current data connection mode to
+     * {@code PASSIVE_REMOTE_DATA_CONNECTION_MODE}. Use this method only for server
+     * to server data transfers.
+     * This method issues a PASV command to the server, telling it to open a data
+     * port to which the active server will connect to conduct data transfers. You
+     * must call this method before EVERY server to server transfer attempt. The
+     * FTPClient will NOT automatically continue to issue PASV commands. You also
+     * must
+     * remember to call {@link #enterLocalActiveMode enterLocalActiveMode() } if you
+     * wish to return to the normal data connection mode.
      *
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean enterRemotePassiveMode() throws IOException {
         if (pasv() != FTPReply.ENTERING_PASSIVE_MODE) {
@@ -1379,7 +1660,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Queries the server for supported features. The server may reply with a list of server-supported extensions. For example, a typical client-server
+     * Queries the server for supported features. The server may reply with a list
+     * of server-supported extensions. For example, a typical client-server
      * interaction might be (from RFC 2389):
      *
      * <pre>
@@ -1392,7 +1674,8 @@ public class FTPClient extends FTP implements Configurable {
         S&gt; 211 END
      * </pre>
      *
-     * @see <a href="http://www.faqs.org/rfcs/rfc2389.html">http://www.faqs.org/rfcs/rfc2389.html</a>
+     * @see <a href=
+     *      "http://www.faqs.org/rfcs/rfc2389.html">http://www.faqs.org/rfcs/rfc2389.html</a>
      * @return True if successfully completed, false if not.
      * @throws IOException on error
      * @since 2.2
@@ -1402,12 +1685,16 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Queries the server for a supported feature, and returns its value (if any). Caches the parsed response to avoid resending the command repeatedly.
+     * Queries the server for a supported feature, and returns its value (if any).
+     * Caches the parsed response to avoid resending the command repeatedly.
      *
      * @param feature the feature to check
      *
-     * @return if the feature is present, returns the feature value or the empty string if the feature exists but has no value. Returns {@code null} if the
-     *         feature is not found or the command failed. Check {@link #getReplyCode()} or {@link #getReplyString()} if so.
+     * @return if the feature is present, returns the feature value or the empty
+     *         string if the feature exists but has no value. Returns {@code null}
+     *         if the
+     *         feature is not found or the command failed. Check
+     *         {@link #getReplyCode()} or {@link #getReplyString()} if so.
      * @throws IOException on error
      * @since 3.0
      */
@@ -1420,12 +1707,15 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Queries the server for a supported feature, and returns its values (if any). Caches the parsed response to avoid resending the command repeatedly.
+     * Queries the server for a supported feature, and returns its values (if any).
+     * Caches the parsed response to avoid resending the command repeatedly.
      *
      * @param feature the feature to check
      *
-     * @return if the feature is present, returns the feature values (empty array if none) Returns {@code null} if the feature is not found or the command
-     *         failed. Check {@link #getReplyCode()} or {@link #getReplyString()} if so.
+     * @return if the feature is present, returns the feature values (empty array if
+     *         none) Returns {@code null} if the feature is not found or the command
+     *         failed. Check {@link #getReplyCode()} or {@link #getReplyString()} if
+     *         so.
      * @throws IOException on error
      * @since 3.0
      */
@@ -1512,7 +1802,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Gets the time to wait between sending control connection keepalive messages when processing file upload or download.
+     * Gets the time to wait between sending control connection keepalive messages
+     * when processing file upload or download.
      * <p>
      * See the class Javadoc section "Control channel keep-alive feature"
      * </p>
@@ -1527,7 +1818,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Gets the time to wait between sending control connection keepalive messages when processing file upload or download.
+     * Gets the time to wait between sending control connection keepalive messages
+     * when processing file upload or download.
      * <p>
      * See the class Javadoc section "Control channel keep-alive feature"
      * </p>
@@ -1573,22 +1865,27 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Returns the current data connection mode (one of the {@code _DATA_CONNECTION_MODE} constants).
+     * Returns the current data connection mode (one of the
+     * {@code _DATA_CONNECTION_MODE} constants).
      *
-     * @return The current data connection mode (one of the {@code _DATA_CONNECTION_MODE} constants).
+     * @return The current data connection mode (one of the
+     *         {@code _DATA_CONNECTION_MODE} constants).
      */
     public int getDataConnectionMode() {
         return dataConnectionMode;
     }
 
     /**
-     * Gets the timeout to use when reading from the data connection. This timeout will be set immediately after opening the data connection, provided that the
+     * Gets the timeout to use when reading from the data connection. This timeout
+     * will be set immediately after opening the data connection, provided that the
      * value is &ge; 0.
      * <p>
-     * <b>Note:</b> the timeout will also be applied when calling accept() whilst establishing an active local data connection.
+     * <b>Note:</b> the timeout will also be applied when calling accept() whilst
+     * establishing an active local data connection.
      * </p>
      *
-     * @return The default timeout used when opening a data connection socket. The value 0 means an infinite timeout.
+     * @return The default timeout used when opening a data connection socket. The
+     *         value 0 means an infinite timeout.
      * @since 3.9.0
      */
     public Duration getDataTimeout() {
@@ -1601,7 +1898,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Gets the host address for active mode; allows the local address to be overridden.
+     * Gets the host address for active mode; allows the local address to be
+     * overridden.
      *
      * @return __activeExternalHost if non-null, else getLocalAddress()
      * @see #setActiveExternalIPAddress(String)
@@ -1642,11 +1940,15 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Issue the FTP MDTM command (not supported by all servers) to retrieve the last modification time of a file. The modification string should be in the ISO
-     * 3077 form "yyyyMMDDhhmmss(.xxx)?". The timestamp represented should also be in GMT, but not all FTP servers honor this.
+     * Issue the FTP MDTM command (not supported by all servers) to retrieve the
+     * last modification time of a file. The modification string should be in the
+     * ISO
+     * 3077 form "yyyyMMDDhhmmss(.xxx)?". The timestamp represented should also be
+     * in GMT, but not all FTP servers honor this.
      *
      * @param pathname The file path to query.
-     * @return A string representing the last file modification time in {@code yyyyMMDDhhmmss} format.
+     * @return A string representing the last file modification time in
+     *         {@code yyyyMMDDhhmmss} format.
      * @throws IOException if an I/O error occurs.
      * @since 2.0
      */
@@ -1659,9 +1961,13 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Returns the hostname or IP address (in the form of a string) returned by the server when entering passive mode. If not in passive mode, returns null.
-     * This method only returns a valid value AFTER a data connection has been opened after a call to {@link #enterLocalPassiveMode enterLocalPassiveMode()}.
-     * This is because FTPClient sends a PASV command to the server only just before opening a data connection, and not when you call
+     * Returns the hostname or IP address (in the form of a string) returned by the
+     * server when entering passive mode. If not in passive mode, returns null.
+     * This method only returns a valid value AFTER a data connection has been
+     * opened after a call to {@link #enterLocalPassiveMode
+     * enterLocalPassiveMode()}.
+     * This is because FTPClient sends a PASV command to the server only just before
+     * opening a data connection, and not when you call
      * {@link #enterLocalPassiveMode enterLocalPassiveMode()}.
      *
      * @return The passive host name if in passive mode, otherwise null.
@@ -1671,7 +1977,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the local IP address in passive mode. Useful when there are multiple network cards.
+     * Sets the local IP address in passive mode. Useful when there are multiple
+     * network cards.
      *
      * @return The local IP address in passive mode.
      */
@@ -1680,11 +1987,16 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * If in passive mode, returns the data port of the passive host. This method only returns a valid value AFTER a data connection has been opened after a
-     * call to {@link #enterLocalPassiveMode enterLocalPassiveMode()}. This is because FTPClient sends a PASV command to the server only just before opening a
-     * data connection, and not when you call {@link #enterLocalPassiveMode enterLocalPassiveMode()}.
+     * If in passive mode, returns the data port of the passive host. This method
+     * only returns a valid value AFTER a data connection has been opened after a
+     * call to {@link #enterLocalPassiveMode enterLocalPassiveMode()}. This is
+     * because FTPClient sends a PASV command to the server only just before opening
+     * a
+     * data connection, and not when you call {@link #enterLocalPassiveMode
+     * enterLocalPassiveMode()}.
      *
-     * @return The data port of the passive server. If not in passive mode, undefined.
+     * @return The data port of the passive server. If not in passive mode,
+     *         undefined.
      */
     public int getPassivePort() {
         return passivePort;
@@ -1701,7 +2013,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Gets the reported host address for active mode EPRT/PORT commands; allows override of {@link #getHostAddress()}.
+     * Gets the reported host address for active mode EPRT/PORT commands; allows
+     * override of {@link #getHostAddress()}.
      *
      * Useful for FTP Client behind Firewall NAT.
      *
@@ -1717,7 +2030,8 @@ public class FTPClient extends FTP implements Configurable {
     /**
      * Fetches the restart offset.
      *
-     * @return offset The offset into the remote file at which to start the next file transfer.
+     * @return offset The offset into the remote file at which to start the next
+     *         file transfer.
      */
     public long getRestartOffset() {
         return restartOffset;
@@ -1734,15 +2048,23 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Issue the FTP SIZE command to the server for a given pathname. This should produce the size of the file.
+     * Issue the FTP SIZE command to the server for a given pathname. This should
+     * produce the size of the file.
      *
      * @param pathname the file name
      *
-     * @return The size information returned by the server; {@code null} if there was an error
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @return The size information returned by the server; {@code null} if there
+     *         was an error
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      * @since 3.7
      */
     public String getSize(final String pathname) throws IOException {
@@ -1756,10 +2078,16 @@ public class FTPClient extends FTP implements Configurable {
      * Issue the FTP STAT command to the server.
      *
      * @return The status information returned by the server.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public String getStatus() throws IOException {
         if (FTPReply.isPositiveCompletion(stat())) {
@@ -1769,15 +2097,22 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Issue the FTP STAT command to the server for a given pathname. This should produce a listing of the file or directory.
+     * Issue the FTP STAT command to the server for a given pathname. This should
+     * produce a listing of the file or directory.
      *
      * @param pathname the file name
      *
      * @return The status information returned by the server.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public String getStatus(final String pathname) throws IOException {
         if (FTPReply.isPositiveCompletion(stat(pathname))) {
@@ -1800,19 +2135,30 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Fetches the system type from the server and returns the string. This value is cached for the duration of the connection after the first call to this
-     * method. In other words, only the first time that you invoke this method will it issue a SYST command to the FTP server. FTPClient will remember the value
+     * Fetches the system type from the server and returns the string. This value is
+     * cached for the duration of the connection after the first call to this
+     * method. In other words, only the first time that you invoke this method will
+     * it issue a SYST command to the FTP server. FTPClient will remember the value
      * and return the cached value until a call to disconnect.
      * <p>
-     * If the SYST command fails, and the system property {@link #FTP_SYSTEM_TYPE_DEFAULT} is defined, then this is used instead.
+     * If the SYST command fails, and the system property
+     * {@link #FTP_SYSTEM_TYPE_DEFAULT} is defined, then this is used instead.
      * </p>
      *
      * @return The system type obtained from the server. Never null.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server (and the
-     *                                      default system type property is not defined)
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server (and
+     *                                      the
+     *                                      default system type property is not
+     *                                      defined)
      * @since 2.2
      */
     public String getSystemType() throws IOException {
@@ -1837,11 +2183,14 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Queries the server for a supported feature. Caches the parsed response to avoid resending the command repeatedly.
+     * Queries the server for a supported feature. Caches the parsed response to
+     * avoid resending the command repeatedly.
      *
      * @param feature the name of the feature; it is converted to upper case.
-     * @return {@code true} if the feature is present, {@code false} if the feature is not present or the {@link #feat()} command failed. Check
-     *         {@link #getReplyCode()} or {@link #getReplyString()} if it is necessary to distinguish these cases.
+     * @return {@code true} if the feature is present, {@code false} if the feature
+     *         is not present or the {@link #feat()} command failed. Check
+     *         {@link #getReplyCode()} or {@link #getReplyString()} if it is
+     *         necessary to distinguish these cases.
      *
      * @throws IOException on error
      * @since 3.8.0
@@ -1851,11 +2200,14 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Queries the server for a supported feature. Caches the parsed response to avoid resending the command repeatedly.
+     * Queries the server for a supported feature. Caches the parsed response to
+     * avoid resending the command repeatedly.
      *
      * @param feature the name of the feature; it is converted to upper case.
-     * @return {@code true} if the feature is present, {@code false} if the feature is not present or the {@link #feat()} command failed. Check
-     *         {@link #getReplyCode()} or {@link #getReplyString()} if it is necessary to distinguish these cases.
+     * @return {@code true} if the feature is present, {@code false} if the feature
+     *         is not present or the {@link #feat()} command failed. Check
+     *         {@link #getReplyCode()} or {@link #getReplyString()} if it is
+     *         necessary to distinguish these cases.
      *
      * @throws IOException on error
      * @since 3.0
@@ -1868,14 +2220,17 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Queries the server for a supported feature with particular value, for example "AUTH SSL" or "AUTH TLS". Caches the parsed response to avoid resending the
+     * Queries the server for a supported feature with particular value, for example
+     * "AUTH SSL" or "AUTH TLS". Caches the parsed response to avoid resending the
      * command repeatedly.
      *
      * @param feature the name of the feature; it is converted to upper case.
      * @param value   the value to find.
      *
-     * @return {@code true} if the feature is present, {@code false} if the feature is not present or the {@link #feat()} command failed. Check
-     *         {@link #getReplyCode()} or {@link #getReplyString()} if it is necessary to distinguish these cases.
+     * @return {@code true} if the feature is present, {@code false} if the feature
+     *         is not present or the {@link #feat()} command failed. Check
+     *         {@link #getReplyCode()} or {@link #getReplyString()} if it is
+     *         necessary to distinguish these cases.
      *
      * @throws IOException on error
      * @since 3.0
@@ -1947,25 +2302,100 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Using the default autodetect mechanism, initialize an FTPListParseEngine object containing a raw file information for the current working directory on
-     * the server This information is obtained through the LIST command. This object is then capable of being iterated to return a sequence of FTPFile objects
+     * Using the default autodetect mechanism, initialize an FTPListParseEngine
+     * object containing a raw file information for the current working directory on
+     * the server This information is obtained through the LIST command. This object
+     * is then capable of being iterated to return a sequence of FTPFile objects
      * with information filled in by the {@code FTPFileEntryParser} used.
      * <p>
-     * This method differs from using the listFiles() methods in that expensive FTPFile objects are not created until needed which may be an advantage on large
+     * This method differs from using the listFiles() methods in that expensive
+     * FTPFile objects are not created until needed which may be an advantage on
+     * large
      * lists.
      * </p>
      *
-     * @return A FTPListParseEngine object that holds the raw information and is capable of providing parsed FTPFile objects, one for each file containing
-     *         information contained in the given path in the format determined by the {@code parser} parameter. Null will be returned if a data
-     *         connection cannot be opened. If the current working directory contains no files, an empty array will be the return.
+     * @return A FTPListParseEngine object that holds the raw information and is
+     *         capable of providing parsed FTPFile objects, one for each file
+     *         containing
+     *         information contained in the given path in the format determined by
+     *         the {@code parser} parameter. Null will be returned if a data
+     *         connection cannot be opened. If the current working directory
+     *         contains no files, an empty array will be the return.
      *
-     * @throws FTPConnectionClosedException                                    If the FTP server prematurely closes the connection as a result of the client
-     *                                                                         being idle or some other reason causing the server to send FTP reply code 421.
-     *                                                                         This exception may be caught either as an IOException or independently as itself.
-     * @throws IOException                                                     If an I/O error occurs while either sending a command to the server or receiving
-     *                                                                         a reply from the server.
-     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown if the autodetect mechanism cannot resolve the type of system we are
-     *                                                                         connected with.
+     * @throws FTPConnectionClosedException                                    If
+     *                                                                         the
+     *                                                                         FTP
+     *                                                                         server
+     *                                                                         prematurely
+     *                                                                         closes
+     *                                                                         the
+     *                                                                         connection
+     *                                                                         as a
+     *                                                                         result
+     *                                                                         of
+     *                                                                         the
+     *                                                                         client
+     *                                                                         being
+     *                                                                         idle
+     *                                                                         or
+     *                                                                         some
+     *                                                                         other
+     *                                                                         reason
+     *                                                                         causing
+     *                                                                         the
+     *                                                                         server
+     *                                                                         to
+     *                                                                         send
+     *                                                                         FTP
+     *                                                                         reply
+     *                                                                         code
+     *                                                                         421.
+     *                                                                         This
+     *                                                                         exception
+     *                                                                         may
+     *                                                                         be
+     *                                                                         caught
+     *                                                                         either
+     *                                                                         as an
+     *                                                                         IOException
+     *                                                                         or
+     *                                                                         independently
+     *                                                                         as
+     *                                                                         itself.
+     * @throws IOException                                                     If an
+     *                                                                         I/O
+     *                                                                         error
+     *                                                                         occurs
+     *                                                                         while
+     *                                                                         either
+     *                                                                         sending
+     *                                                                         a
+     *                                                                         command
+     *                                                                         to
+     *                                                                         the
+     *                                                                         server
+     *                                                                         or
+     *                                                                         receiving
+     *                                                                         a
+     *                                                                         reply
+     *                                                                         from
+     *                                                                         the
+     *                                                                         server.
+     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown
+     *                                                                         if
+     *                                                                         the
+     *                                                                         autodetect
+     *                                                                         mechanism
+     *                                                                         cannot
+     *                                                                         resolve
+     *                                                                         the
+     *                                                                         type
+     *                                                                         of
+     *                                                                         system
+     *                                                                         we
+     *                                                                         are
+     *                                                                         connected
+     *                                                                         with.
      * @see FTPListParseEngine
      */
     public FTPListParseEngine initiateListParsing() throws IOException {
@@ -1973,15 +2403,23 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * private method through which all listFiles() and initiateListParsing methods pass once a parser is determined.
+     * private method through which all listFiles() and initiateListParsing methods
+     * pass once a parser is determined.
      *
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      * @see FTPListParseEngine
      */
-    private FTPListParseEngine initiateListParsing(final FTPFileEntryParser parser, final String pathname) throws IOException {
+    private FTPListParseEngine initiateListParsing(final FTPFileEntryParser parser, final String pathname)
+            throws IOException {
         final Socket socket = _openDataConnection_(FTPCmd.LIST, getListArguments(pathname));
         final FTPListParseEngine engine = new FTPListParseEngine(parser, configuration);
         if (socket == null) {
@@ -1997,15 +2435,20 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Using the default autodetect mechanism, initialize an FTPListParseEngine object containing a raw file information for the supplied directory. This
-     * information is obtained through the LIST command. This object is then capable of being iterated to return a sequence of FTPFile objects with information
+     * Using the default autodetect mechanism, initialize an FTPListParseEngine
+     * object containing a raw file information for the supplied directory. This
+     * information is obtained through the LIST command. This object is then capable
+     * of being iterated to return a sequence of FTPFile objects with information
      * filled in by the {@code FTPFileEntryParser} used.
      * <p>
-     * The server may or may not expand glob expressions. You should avoid using glob expressions because the return format for glob listings differs from
+     * The server may or may not expand glob expressions. You should avoid using
+     * glob expressions because the return format for glob listings differs from
      * server to server and will likely cause this method to fail.
      * </p>
      * <p>
-     * This method differs from using the listFiles() methods in that expensive FTPFile objects are not created until needed which may be an advantage on large
+     * This method differs from using the listFiles() methods in that expensive
+     * FTPFile objects are not created until needed which may be an advantage on
+     * large
      * lists.
      * </p>
      *
@@ -2024,17 +2467,88 @@ public class FTPClient extends FTP implements Configurable {
      *
      * @param pathname the starting directory
      *
-     * @return A FTPListParseEngine object that holds the raw information and is capable of providing parsed FTPFile objects, one for each file containing
-     *         information contained in the given path in the format determined by the {@code parser} parameter. Null will be returned if a data
-     *         connection cannot be opened. If the current working directory contains no files, an empty array will be the return.
+     * @return A FTPListParseEngine object that holds the raw information and is
+     *         capable of providing parsed FTPFile objects, one for each file
+     *         containing
+     *         information contained in the given path in the format determined by
+     *         the {@code parser} parameter. Null will be returned if a data
+     *         connection cannot be opened. If the current working directory
+     *         contains no files, an empty array will be the return.
      *
-     * @throws FTPConnectionClosedException                                    If the FTP server prematurely closes the connection as a result of the client
-     *                                                                         being idle or some other reason causing the server to send FTP reply code 421.
-     *                                                                         This exception may be caught either as an IOException or independently as itself.
-     * @throws IOException                                                     If an I/O error occurs while either sending a command to the server or receiving
-     *                                                                         a reply from the server.
-     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown if the autodetect mechanism cannot resolve the type of system we are
-     *                                                                         connected with.
+     * @throws FTPConnectionClosedException                                    If
+     *                                                                         the
+     *                                                                         FTP
+     *                                                                         server
+     *                                                                         prematurely
+     *                                                                         closes
+     *                                                                         the
+     *                                                                         connection
+     *                                                                         as a
+     *                                                                         result
+     *                                                                         of
+     *                                                                         the
+     *                                                                         client
+     *                                                                         being
+     *                                                                         idle
+     *                                                                         or
+     *                                                                         some
+     *                                                                         other
+     *                                                                         reason
+     *                                                                         causing
+     *                                                                         the
+     *                                                                         server
+     *                                                                         to
+     *                                                                         send
+     *                                                                         FTP
+     *                                                                         reply
+     *                                                                         code
+     *                                                                         421.
+     *                                                                         This
+     *                                                                         exception
+     *                                                                         may
+     *                                                                         be
+     *                                                                         caught
+     *                                                                         either
+     *                                                                         as an
+     *                                                                         IOException
+     *                                                                         or
+     *                                                                         independently
+     *                                                                         as
+     *                                                                         itself.
+     * @throws IOException                                                     If an
+     *                                                                         I/O
+     *                                                                         error
+     *                                                                         occurs
+     *                                                                         while
+     *                                                                         either
+     *                                                                         sending
+     *                                                                         a
+     *                                                                         command
+     *                                                                         to
+     *                                                                         the
+     *                                                                         server
+     *                                                                         or
+     *                                                                         receiving
+     *                                                                         a
+     *                                                                         reply
+     *                                                                         from
+     *                                                                         the
+     *                                                                         server.
+     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown
+     *                                                                         if
+     *                                                                         the
+     *                                                                         autodetect
+     *                                                                         mechanism
+     *                                                                         cannot
+     *                                                                         resolve
+     *                                                                         the
+     *                                                                         type
+     *                                                                         of
+     *                                                                         system
+     *                                                                         we
+     *                                                                         are
+     *                                                                         connected
+     *                                                                         with.
      * @see FTPListParseEngine
      */
     public FTPListParseEngine initiateListParsing(final String pathname) throws IOException {
@@ -2042,39 +2556,162 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Using the supplied parser key, initialize an FTPListParseEngine object containing a raw file information for the supplied directory. This information is
-     * obtained through the LIST command. This object is then capable of being iterated to return a sequence of FTPFile objects with information filled in by
+     * Using the supplied parser key, initialize an FTPListParseEngine object
+     * containing a raw file information for the supplied directory. This
+     * information is
+     * obtained through the LIST command. This object is then capable of being
+     * iterated to return a sequence of FTPFile objects with information filled in
+     * by
      * the {@code FTPFileEntryParser} used.
      * <p>
-     * The server may or may not expand glob expressions. You should avoid using glob expressions because the return format for glob listings differs from
+     * The server may or may not expand glob expressions. You should avoid using
+     * glob expressions because the return format for glob listings differs from
      * server to server and will likely cause this method to fail.
      * </p>
      * <p>
-     * This method differs from using the listFiles() methods in that expensive FTPFile objects are not created until needed which may be an advantage on large
+     * This method differs from using the listFiles() methods in that expensive
+     * FTPFile objects are not created until needed which may be an advantage on
+     * large
      * lists.
      * </p>
      *
-     * @param parserKey A string representing a designated code or fully-qualified class name of an {@code FTPFileEntryParser} that should be used to
-     *                  parse each server file listing. May be {@code null}, in which case the code checks first the system property {@link #FTP_SYSTEM_TYPE},
-     *                  and if that is not defined the SYST command is used to provide the value. To allow for arbitrary system types, the return from the SYST
-     *                  command is used to look up an alias for the type in the {@link #SYSTEM_TYPE_PROPERTIES} properties file if it is available.
+     * @param parserKey A string representing a designated code or fully-qualified
+     *                  class name of an {@code FTPFileEntryParser} that should be
+     *                  used to
+     *                  parse each server file listing. May be {@code null}, in
+     *                  which case the code checks first the system property
+     *                  {@link #FTP_SYSTEM_TYPE},
+     *                  and if that is not defined the SYST command is used to
+     *                  provide the value. To allow for arbitrary system types, the
+     *                  return from the SYST
+     *                  command is used to look up an alias for the type in the
+     *                  {@link #SYSTEM_TYPE_PROPERTIES} properties file if it is
+     *                  available.
      * @param pathname  the starting directory
      *
-     * @return A FTPListParseEngine object that holds the raw information and is capable of providing parsed FTPFile objects, one for each file containing
-     *         information contained in the given path in the format determined by the {@code parser} parameter. Null will be returned if a data
-     *         connection cannot be opened. If the current working directory contains no files, an empty array will be the return.
+     * @return A FTPListParseEngine object that holds the raw information and is
+     *         capable of providing parsed FTPFile objects, one for each file
+     *         containing
+     *         information contained in the given path in the format determined by
+     *         the {@code parser} parameter. Null will be returned if a data
+     *         connection cannot be opened. If the current working directory
+     *         contains no files, an empty array will be the return.
      *
-     * @throws FTPConnectionClosedException                                    If the FTP server prematurely closes the connection as a result of the client
-     *                                                                         being idle or some other reason causing the server to send FTP reply code 421.
-     *                                                                         This exception may be caught either as an IOException or independently as itself.
-     * @throws IOException                                                     If an I/O error occurs while either sending a command to the server or receiving
-     *                                                                         a reply from the server.
-     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown if the parserKey parameter cannot be resolved by the selected parser
-     *                                                                         factory. In the DefaultFTPEntryParserFactory, this will happen when parserKey is
-     *                                                                         neither the fully qualified class name of a class implementing the interface
-     *                                                                         org.apache.commons.net.ftp.FTPFileEntryParser nor a string containing one of the
-     *                                                                         recognized keys mapping to such a parser or if class loader security issues
-     *                                                                         prevent its being loaded.
+     * @throws FTPConnectionClosedException                                    If
+     *                                                                         the
+     *                                                                         FTP
+     *                                                                         server
+     *                                                                         prematurely
+     *                                                                         closes
+     *                                                                         the
+     *                                                                         connection
+     *                                                                         as a
+     *                                                                         result
+     *                                                                         of
+     *                                                                         the
+     *                                                                         client
+     *                                                                         being
+     *                                                                         idle
+     *                                                                         or
+     *                                                                         some
+     *                                                                         other
+     *                                                                         reason
+     *                                                                         causing
+     *                                                                         the
+     *                                                                         server
+     *                                                                         to
+     *                                                                         send
+     *                                                                         FTP
+     *                                                                         reply
+     *                                                                         code
+     *                                                                         421.
+     *                                                                         This
+     *                                                                         exception
+     *                                                                         may
+     *                                                                         be
+     *                                                                         caught
+     *                                                                         either
+     *                                                                         as an
+     *                                                                         IOException
+     *                                                                         or
+     *                                                                         independently
+     *                                                                         as
+     *                                                                         itself.
+     * @throws IOException                                                     If an
+     *                                                                         I/O
+     *                                                                         error
+     *                                                                         occurs
+     *                                                                         while
+     *                                                                         either
+     *                                                                         sending
+     *                                                                         a
+     *                                                                         command
+     *                                                                         to
+     *                                                                         the
+     *                                                                         server
+     *                                                                         or
+     *                                                                         receiving
+     *                                                                         a
+     *                                                                         reply
+     *                                                                         from
+     *                                                                         the
+     *                                                                         server.
+     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown
+     *                                                                         if
+     *                                                                         the
+     *                                                                         parserKey
+     *                                                                         parameter
+     *                                                                         cannot
+     *                                                                         be
+     *                                                                         resolved
+     *                                                                         by
+     *                                                                         the
+     *                                                                         selected
+     *                                                                         parser
+     *                                                                         factory.
+     *                                                                         In
+     *                                                                         the
+     *                                                                         DefaultFTPEntryParserFactory,
+     *                                                                         this
+     *                                                                         will
+     *                                                                         happen
+     *                                                                         when
+     *                                                                         parserKey
+     *                                                                         is
+     *                                                                         neither
+     *                                                                         the
+     *                                                                         fully
+     *                                                                         qualified
+     *                                                                         class
+     *                                                                         name
+     *                                                                         of a
+     *                                                                         class
+     *                                                                         implementing
+     *                                                                         the
+     *                                                                         interface
+     *                                                                         org.apache.commons.net.ftp.FTPFileEntryParser
+     *                                                                         nor a
+     *                                                                         string
+     *                                                                         containing
+     *                                                                         one
+     *                                                                         of
+     *                                                                         the
+     *                                                                         recognized
+     *                                                                         keys
+     *                                                                         mapping
+     *                                                                         to
+     *                                                                         such
+     *                                                                         a
+     *                                                                         parser
+     *                                                                         or if
+     *                                                                         class
+     *                                                                         loader
+     *                                                                         security
+     *                                                                         issues
+     *                                                                         prevent
+     *                                                                         its
+     *                                                                         being
+     *                                                                         loaded.
      * @see FTPListParseEngine
      */
     public FTPListParseEngine initiateListParsing(final String parserKey, final String pathname) throws IOException {
@@ -2115,11 +2752,15 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Returns, whether the IP address from the server's response should be used. Until 3.9.0, this has always been the case. Beginning with 3.9.0, that IP
-     * address will be silently ignored, and replaced with the remote IP address of the control connection, unless this configuration option is given, which
-     * restores the old behavior. To enable this by default, use the system property {@link FTPClient#FTP_IP_ADDRESS_FROM_PASV_RESPONSE}.
+     * Returns, whether the IP address from the server's response should be used.
+     * Until 3.9.0, this has always been the case. Beginning with 3.9.0, that IP
+     * address will be silently ignored, and replaced with the remote IP address of
+     * the control connection, unless this configuration option is given, which
+     * restores the old behavior. To enable this by default, use the system property
+     * {@link FTPClient#FTP_IP_ADDRESS_FROM_PASV_RESPONSE}.
      *
-     * @return True, if the IP address from the server's response will be used (pre-3.9 compatible behavior), or false (ignore that IP address).
+     * @return True, if the IP address from the server's response will be used
+     *         (pre-3.9 compatible behavior), or false (ignore that IP address).
      *
      * @see FTPClient#FTP_IP_ADDRESS_FROM_PASV_RESPONSE
      * @see #setIpAddressFromPasvResponse(boolean)
@@ -2130,7 +2771,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Return whether or not verification of the remote host participating in data connections is enabled. The default behavior is for verification to be
+     * Return whether or not verification of the remote host participating in data
+     * connections is enabled. The default behavior is for verification to be
      * enabled.
      *
      * @return True if verification is enabled, false if not.
@@ -2140,7 +2782,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Whether to attempt using EPSV with IPv4. Default (if not set) is {@code false}
+     * Whether to attempt using EPSV with IPv4. Default (if not set) is
+     * {@code false}
      *
      * @return true if EPSV shall be attempted with IPv4.
      * @since 2.2
@@ -2150,28 +2793,137 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Using the default system autodetect mechanism, obtain a list of directories contained in the current working directory.
+     * Using the default system autodetect mechanism, obtain a list of directories
+     * contained in the current working directory.
      * <p>
-     * This information is obtained through the LIST command. The contents of the returned array is determined by the{@code FTPFileEntryParser} used.
+     * This information is obtained through the LIST command. The contents of the
+     * returned array is determined by the{@code FTPFileEntryParser} used.
      * </p>
      * <p>
-     * N.B. the LIST command does not generally return very precise timestamps. For recent files, the response usually contains hours and minutes (not seconds).
-     * For older files, the output may only contain a date. If the server supports it, the MLSD command returns timestamps with a precision of seconds, and may
+     * N.B. the LIST command does not generally return very precise timestamps. For
+     * recent files, the response usually contains hours and minutes (not seconds).
+     * For older files, the output may only contain a date. If the server supports
+     * it, the MLSD command returns timestamps with a precision of seconds, and may
      * include milliseconds. See {@link #mlistDir()}
      * </p>
      *
-     * @return The list of directories contained in the current directory in the format determined by the autodetection mechanism.
-     * @throws FTPConnectionClosedException                                    If the FTP server prematurely closes the connection as a result of the client
-     *                                                                         being idle or some other reason causing the server to send FTP reply code 421.
-     *                                                                         This exception may be caught either as an IOException or independently as itself.
-     * @throws IOException                                                     If an I/O error occurs while either sending a command to the server or receiving
-     *                                                                         a reply from the server.
-     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown if the parserKey parameter cannot be resolved by the selected parser
-     *                                                                         factory. In the DefaultFTPEntryParserFactory, this will happen when parserKey is
-     *                                                                         neither the fully qualified class name of a class implementing the interface
-     *                                                                         org.apache.commons.net.ftp.FTPFileEntryParser nor a string containing one of the
-     *                                                                         recognized keys mapping to such a parser or if class loader security issues
-     *                                                                         prevent its being loaded.
+     * @return The list of directories contained in the current directory in the
+     *         format determined by the autodetection mechanism.
+     * @throws FTPConnectionClosedException                                    If
+     *                                                                         the
+     *                                                                         FTP
+     *                                                                         server
+     *                                                                         prematurely
+     *                                                                         closes
+     *                                                                         the
+     *                                                                         connection
+     *                                                                         as a
+     *                                                                         result
+     *                                                                         of
+     *                                                                         the
+     *                                                                         client
+     *                                                                         being
+     *                                                                         idle
+     *                                                                         or
+     *                                                                         some
+     *                                                                         other
+     *                                                                         reason
+     *                                                                         causing
+     *                                                                         the
+     *                                                                         server
+     *                                                                         to
+     *                                                                         send
+     *                                                                         FTP
+     *                                                                         reply
+     *                                                                         code
+     *                                                                         421.
+     *                                                                         This
+     *                                                                         exception
+     *                                                                         may
+     *                                                                         be
+     *                                                                         caught
+     *                                                                         either
+     *                                                                         as an
+     *                                                                         IOException
+     *                                                                         or
+     *                                                                         independently
+     *                                                                         as
+     *                                                                         itself.
+     * @throws IOException                                                     If an
+     *                                                                         I/O
+     *                                                                         error
+     *                                                                         occurs
+     *                                                                         while
+     *                                                                         either
+     *                                                                         sending
+     *                                                                         a
+     *                                                                         command
+     *                                                                         to
+     *                                                                         the
+     *                                                                         server
+     *                                                                         or
+     *                                                                         receiving
+     *                                                                         a
+     *                                                                         reply
+     *                                                                         from
+     *                                                                         the
+     *                                                                         server.
+     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown
+     *                                                                         if
+     *                                                                         the
+     *                                                                         parserKey
+     *                                                                         parameter
+     *                                                                         cannot
+     *                                                                         be
+     *                                                                         resolved
+     *                                                                         by
+     *                                                                         the
+     *                                                                         selected
+     *                                                                         parser
+     *                                                                         factory.
+     *                                                                         In
+     *                                                                         the
+     *                                                                         DefaultFTPEntryParserFactory,
+     *                                                                         this
+     *                                                                         will
+     *                                                                         happen
+     *                                                                         when
+     *                                                                         parserKey
+     *                                                                         is
+     *                                                                         neither
+     *                                                                         the
+     *                                                                         fully
+     *                                                                         qualified
+     *                                                                         class
+     *                                                                         name
+     *                                                                         of a
+     *                                                                         class
+     *                                                                         implementing
+     *                                                                         the
+     *                                                                         interface
+     *                                                                         org.apache.commons.net.ftp.FTPFileEntryParser
+     *                                                                         nor a
+     *                                                                         string
+     *                                                                         containing
+     *                                                                         one
+     *                                                                         of
+     *                                                                         the
+     *                                                                         recognized
+     *                                                                         keys
+     *                                                                         mapping
+     *                                                                         to
+     *                                                                         such
+     *                                                                         a
+     *                                                                         parser
+     *                                                                         or if
+     *                                                                         class
+     *                                                                         loader
+     *                                                                         security
+     *                                                                         issues
+     *                                                                         prevent
+     *                                                                         its
+     *                                                                         being
+     *                                                                         loaded.
      * @see org.apache.commons.net.ftp.parser.DefaultFTPFileEntryParserFactory
      * @see org.apache.commons.net.ftp.parser.FTPFileEntryParserFactory
      * @see org.apache.commons.net.ftp.FTPFileEntryParser
@@ -2182,29 +2934,138 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Using the default system autodetect mechanism, obtain a list of directories contained in the specified directory.
+     * Using the default system autodetect mechanism, obtain a list of directories
+     * contained in the specified directory.
      * <p>
-     * This information is obtained through the LIST command. The contents of the returned array is determined by the{@code FTPFileEntryParser} used.
+     * This information is obtained through the LIST command. The contents of the
+     * returned array is determined by the{@code FTPFileEntryParser} used.
      * </p>
      * <p>
-     * N.B. the LIST command does not generally return very precise timestamps. For recent files, the response usually contains hours and minutes (not seconds).
-     * For older files, the output may only contain a date. If the server supports it, the MLSD command returns timestamps with a precision of seconds, and may
+     * N.B. the LIST command does not generally return very precise timestamps. For
+     * recent files, the response usually contains hours and minutes (not seconds).
+     * For older files, the output may only contain a date. If the server supports
+     * it, the MLSD command returns timestamps with a precision of seconds, and may
      * include milliseconds. See {@link #mlistDir()}
      * </p>
      *
      * @param parent the starting directory
-     * @return The list of directories contained in the specified directory in the format determined by the autodetection mechanism.
-     * @throws FTPConnectionClosedException                                    If the FTP server prematurely closes the connection as a result of the client
-     *                                                                         being idle or some other reason causing the server to send FTP reply code 421.
-     *                                                                         This exception may be caught either as an IOException or independently as itself.
-     * @throws IOException                                                     If an I/O error occurs while either sending a command to the server or receiving
-     *                                                                         a reply from the server.
-     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown if the parserKey parameter cannot be resolved by the selected parser
-     *                                                                         factory. In the DefaultFTPEntryParserFactory, this will happen when parserKey is
-     *                                                                         neither the fully qualified class name of a class implementing the interface
-     *                                                                         org.apache.commons.net.ftp.FTPFileEntryParser nor a string containing one of the
-     *                                                                         recognized keys mapping to such a parser or if class loader security issues
-     *                                                                         prevent its being loaded.
+     * @return The list of directories contained in the specified directory in the
+     *         format determined by the autodetection mechanism.
+     * @throws FTPConnectionClosedException                                    If
+     *                                                                         the
+     *                                                                         FTP
+     *                                                                         server
+     *                                                                         prematurely
+     *                                                                         closes
+     *                                                                         the
+     *                                                                         connection
+     *                                                                         as a
+     *                                                                         result
+     *                                                                         of
+     *                                                                         the
+     *                                                                         client
+     *                                                                         being
+     *                                                                         idle
+     *                                                                         or
+     *                                                                         some
+     *                                                                         other
+     *                                                                         reason
+     *                                                                         causing
+     *                                                                         the
+     *                                                                         server
+     *                                                                         to
+     *                                                                         send
+     *                                                                         FTP
+     *                                                                         reply
+     *                                                                         code
+     *                                                                         421.
+     *                                                                         This
+     *                                                                         exception
+     *                                                                         may
+     *                                                                         be
+     *                                                                         caught
+     *                                                                         either
+     *                                                                         as an
+     *                                                                         IOException
+     *                                                                         or
+     *                                                                         independently
+     *                                                                         as
+     *                                                                         itself.
+     * @throws IOException                                                     If an
+     *                                                                         I/O
+     *                                                                         error
+     *                                                                         occurs
+     *                                                                         while
+     *                                                                         either
+     *                                                                         sending
+     *                                                                         a
+     *                                                                         command
+     *                                                                         to
+     *                                                                         the
+     *                                                                         server
+     *                                                                         or
+     *                                                                         receiving
+     *                                                                         a
+     *                                                                         reply
+     *                                                                         from
+     *                                                                         the
+     *                                                                         server.
+     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown
+     *                                                                         if
+     *                                                                         the
+     *                                                                         parserKey
+     *                                                                         parameter
+     *                                                                         cannot
+     *                                                                         be
+     *                                                                         resolved
+     *                                                                         by
+     *                                                                         the
+     *                                                                         selected
+     *                                                                         parser
+     *                                                                         factory.
+     *                                                                         In
+     *                                                                         the
+     *                                                                         DefaultFTPEntryParserFactory,
+     *                                                                         this
+     *                                                                         will
+     *                                                                         happen
+     *                                                                         when
+     *                                                                         parserKey
+     *                                                                         is
+     *                                                                         neither
+     *                                                                         the
+     *                                                                         fully
+     *                                                                         qualified
+     *                                                                         class
+     *                                                                         name
+     *                                                                         of a
+     *                                                                         class
+     *                                                                         implementing
+     *                                                                         the
+     *                                                                         interface
+     *                                                                         org.apache.commons.net.ftp.FTPFileEntryParser
+     *                                                                         nor a
+     *                                                                         string
+     *                                                                         containing
+     *                                                                         one
+     *                                                                         of
+     *                                                                         the
+     *                                                                         recognized
+     *                                                                         keys
+     *                                                                         mapping
+     *                                                                         to
+     *                                                                         such
+     *                                                                         a
+     *                                                                         parser
+     *                                                                         or if
+     *                                                                         class
+     *                                                                         loader
+     *                                                                         security
+     *                                                                         issues
+     *                                                                         prevent
+     *                                                                         its
+     *                                                                         being
+     *                                                                         loaded.
      * @see org.apache.commons.net.ftp.parser.DefaultFTPFileEntryParserFactory
      * @see org.apache.commons.net.ftp.parser.FTPFileEntryParserFactory
      * @see org.apache.commons.net.ftp.FTPFileEntryParser
@@ -2215,30 +3076,141 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Using the default system autodetect mechanism, obtain a list of file information for the current working directory.
+     * Using the default system autodetect mechanism, obtain a list of file
+     * information for the current working directory.
      * <p>
-     * This information is obtained through the LIST command. The contents of the returned array is determined by the{@code FTPFileEntryParser} used.
+     * This information is obtained through the LIST command. The contents of the
+     * returned array is determined by the{@code FTPFileEntryParser} used.
      * </p>
      * <p>
-     * N.B. the LIST command does not generally return very precise timestamps. For recent files, the response usually contains hours and minutes (not seconds).
-     * For older files, the output may only contain a date. If the server supports it, the MLSD command returns timestamps with a precision of seconds, and may
+     * N.B. the LIST command does not generally return very precise timestamps. For
+     * recent files, the response usually contains hours and minutes (not seconds).
+     * For older files, the output may only contain a date. If the server supports
+     * it, the MLSD command returns timestamps with a precision of seconds, and may
      * include milliseconds. See {@link #mlistDir()}
      * </p>
      *
-     * @return The list of file information contained in the current directory in the format determined by the autodetection mechanism.
-     *         <b>NOTE:</b> This array may contain null members if any of the individual file listings failed to parse. The caller should check each entry for
+     * @return The list of file information contained in the current directory in
+     *         the format determined by the autodetection mechanism.
+     *         <b>NOTE:</b> This array may contain null members if any of the
+     *         individual file listings failed to parse. The caller should check
+     *         each entry for
      *         null before referencing it.
-     * @throws FTPConnectionClosedException                                    If the FTP server prematurely closes the connection as a result of the client
-     *                                                                         being idle or some other reason causing the server to send FTP reply code 421.
-     *                                                                         This exception may be caught either as an IOException or independently as itself.
-     * @throws IOException                                                     If an I/O error occurs while either sending a command to the server or receiving
-     *                                                                         a reply from the server.
-     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown if the parserKey parameter cannot be resolved by the selected parser
-     *                                                                         factory. In the DefaultFTPEntryParserFactory, this will happen when parserKey is
-     *                                                                         neither the fully qualified class name of a class implementing the interface
-     *                                                                         org.apache.commons.net.ftp.FTPFileEntryParser nor a string containing one of the
-     *                                                                         recognized keys mapping to such a parser or if class loader security issues
-     *                                                                         prevent its being loaded.
+     * @throws FTPConnectionClosedException                                    If
+     *                                                                         the
+     *                                                                         FTP
+     *                                                                         server
+     *                                                                         prematurely
+     *                                                                         closes
+     *                                                                         the
+     *                                                                         connection
+     *                                                                         as a
+     *                                                                         result
+     *                                                                         of
+     *                                                                         the
+     *                                                                         client
+     *                                                                         being
+     *                                                                         idle
+     *                                                                         or
+     *                                                                         some
+     *                                                                         other
+     *                                                                         reason
+     *                                                                         causing
+     *                                                                         the
+     *                                                                         server
+     *                                                                         to
+     *                                                                         send
+     *                                                                         FTP
+     *                                                                         reply
+     *                                                                         code
+     *                                                                         421.
+     *                                                                         This
+     *                                                                         exception
+     *                                                                         may
+     *                                                                         be
+     *                                                                         caught
+     *                                                                         either
+     *                                                                         as an
+     *                                                                         IOException
+     *                                                                         or
+     *                                                                         independently
+     *                                                                         as
+     *                                                                         itself.
+     * @throws IOException                                                     If an
+     *                                                                         I/O
+     *                                                                         error
+     *                                                                         occurs
+     *                                                                         while
+     *                                                                         either
+     *                                                                         sending
+     *                                                                         a
+     *                                                                         command
+     *                                                                         to
+     *                                                                         the
+     *                                                                         server
+     *                                                                         or
+     *                                                                         receiving
+     *                                                                         a
+     *                                                                         reply
+     *                                                                         from
+     *                                                                         the
+     *                                                                         server.
+     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown
+     *                                                                         if
+     *                                                                         the
+     *                                                                         parserKey
+     *                                                                         parameter
+     *                                                                         cannot
+     *                                                                         be
+     *                                                                         resolved
+     *                                                                         by
+     *                                                                         the
+     *                                                                         selected
+     *                                                                         parser
+     *                                                                         factory.
+     *                                                                         In
+     *                                                                         the
+     *                                                                         DefaultFTPEntryParserFactory,
+     *                                                                         this
+     *                                                                         will
+     *                                                                         happen
+     *                                                                         when
+     *                                                                         parserKey
+     *                                                                         is
+     *                                                                         neither
+     *                                                                         the
+     *                                                                         fully
+     *                                                                         qualified
+     *                                                                         class
+     *                                                                         name
+     *                                                                         of a
+     *                                                                         class
+     *                                                                         implementing
+     *                                                                         the
+     *                                                                         interface
+     *                                                                         org.apache.commons.net.ftp.FTPFileEntryParser
+     *                                                                         nor a
+     *                                                                         string
+     *                                                                         containing
+     *                                                                         one
+     *                                                                         of
+     *                                                                         the
+     *                                                                         recognized
+     *                                                                         keys
+     *                                                                         mapping
+     *                                                                         to
+     *                                                                         such
+     *                                                                         a
+     *                                                                         parser
+     *                                                                         or if
+     *                                                                         class
+     *                                                                         loader
+     *                                                                         security
+     *                                                                         issues
+     *                                                                         prevent
+     *                                                                         its
+     *                                                                         being
+     *                                                                         loaded.
      * @see org.apache.commons.net.ftp.parser.DefaultFTPFileEntryParserFactory
      * @see org.apache.commons.net.ftp.parser.FTPFileEntryParserFactory
      * @see org.apache.commons.net.ftp.FTPFileEntryParser
@@ -2248,32 +3220,147 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Using the default system autodetect mechanism, obtain a list of file information for the current working directory or for just a single file.
+     * Using the default system autodetect mechanism, obtain a list of file
+     * information for the current working directory or for just a single file.
      * <p>
-     * This information is obtained through the LIST command. The contents of the returned array is determined by the{@code FTPFileEntryParser} used.
+     * This information is obtained through the LIST command. The contents of the
+     * returned array is determined by the{@code FTPFileEntryParser} used.
      * </p>
      * <p>
-     * N.B. the LIST command does not generally return very precise timestamps. For recent files, the response usually contains hours and minutes (not seconds).
-     * For older files, the output may only contain a date. If the server supports it, the MLSD command returns timestamps with a precision of seconds, and may
+     * N.B. the LIST command does not generally return very precise timestamps. For
+     * recent files, the response usually contains hours and minutes (not seconds).
+     * For older files, the output may only contain a date. If the server supports
+     * it, the MLSD command returns timestamps with a precision of seconds, and may
      * include milliseconds. See {@link #mlistDir()}
      * </p>
      *
-     * @param pathname The file or directory to list. Since the server may or may not expand glob expressions, using them here is not recommended and may well
-     *                 cause this method to fail. Also, some servers treat a leading '-' as being an option. To avoid this interpretation, use an absolute
-     *                 pathname or prefix the pathname with ./ (unix style servers). Some servers may support "--" as meaning end of options, in which case "--
+     * @param pathname The file or directory to list. Since the server may or may
+     *                 not expand glob expressions, using them here is not
+     *                 recommended and may well
+     *                 cause this method to fail. Also, some servers treat a leading
+     *                 '-' as being an option. To avoid this interpretation, use an
+     *                 absolute
+     *                 pathname or prefix the pathname with ./ (unix style servers).
+     *                 Some servers may support "--" as meaning end of options, in
+     *                 which case "--
      *                 -xyz" should work.
-     * @return The list of file information contained in the given path in the format determined by the autodetection mechanism
-     * @throws FTPConnectionClosedException                                    If the FTP server prematurely closes the connection as a result of the client
-     *                                                                         being idle or some other reason causing the server to send FTP reply code 421.
-     *                                                                         This exception may be caught either as an IOException or independently as itself.
-     * @throws IOException                                                     If an I/O error occurs while either sending a command to the server or receiving
-     *                                                                         a reply from the server.
-     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown if the parserKey parameter cannot be resolved by the selected parser
-     *                                                                         factory. In the DefaultFTPEntryParserFactory, this will happen when parserKey is
-     *                                                                         neither the fully qualified class name of a class implementing the interface
-     *                                                                         org.apache.commons.net.ftp.FTPFileEntryParser nor a string containing one of the
-     *                                                                         recognized keys mapping to such a parser or if class loader security issues
-     *                                                                         prevent its being loaded.
+     * @return The list of file information contained in the given path in the
+     *         format determined by the autodetection mechanism
+     * @throws FTPConnectionClosedException                                    If
+     *                                                                         the
+     *                                                                         FTP
+     *                                                                         server
+     *                                                                         prematurely
+     *                                                                         closes
+     *                                                                         the
+     *                                                                         connection
+     *                                                                         as a
+     *                                                                         result
+     *                                                                         of
+     *                                                                         the
+     *                                                                         client
+     *                                                                         being
+     *                                                                         idle
+     *                                                                         or
+     *                                                                         some
+     *                                                                         other
+     *                                                                         reason
+     *                                                                         causing
+     *                                                                         the
+     *                                                                         server
+     *                                                                         to
+     *                                                                         send
+     *                                                                         FTP
+     *                                                                         reply
+     *                                                                         code
+     *                                                                         421.
+     *                                                                         This
+     *                                                                         exception
+     *                                                                         may
+     *                                                                         be
+     *                                                                         caught
+     *                                                                         either
+     *                                                                         as an
+     *                                                                         IOException
+     *                                                                         or
+     *                                                                         independently
+     *                                                                         as
+     *                                                                         itself.
+     * @throws IOException                                                     If an
+     *                                                                         I/O
+     *                                                                         error
+     *                                                                         occurs
+     *                                                                         while
+     *                                                                         either
+     *                                                                         sending
+     *                                                                         a
+     *                                                                         command
+     *                                                                         to
+     *                                                                         the
+     *                                                                         server
+     *                                                                         or
+     *                                                                         receiving
+     *                                                                         a
+     *                                                                         reply
+     *                                                                         from
+     *                                                                         the
+     *                                                                         server.
+     * @throws org.apache.commons.net.ftp.parser.ParserInitializationException Thrown
+     *                                                                         if
+     *                                                                         the
+     *                                                                         parserKey
+     *                                                                         parameter
+     *                                                                         cannot
+     *                                                                         be
+     *                                                                         resolved
+     *                                                                         by
+     *                                                                         the
+     *                                                                         selected
+     *                                                                         parser
+     *                                                                         factory.
+     *                                                                         In
+     *                                                                         the
+     *                                                                         DefaultFTPEntryParserFactory,
+     *                                                                         this
+     *                                                                         will
+     *                                                                         happen
+     *                                                                         when
+     *                                                                         parserKey
+     *                                                                         is
+     *                                                                         neither
+     *                                                                         the
+     *                                                                         fully
+     *                                                                         qualified
+     *                                                                         class
+     *                                                                         name
+     *                                                                         of a
+     *                                                                         class
+     *                                                                         implementing
+     *                                                                         the
+     *                                                                         interface
+     *                                                                         org.apache.commons.net.ftp.FTPFileEntryParser
+     *                                                                         nor a
+     *                                                                         string
+     *                                                                         containing
+     *                                                                         one
+     *                                                                         of
+     *                                                                         the
+     *                                                                         recognized
+     *                                                                         keys
+     *                                                                         mapping
+     *                                                                         to
+     *                                                                         such
+     *                                                                         a
+     *                                                                         parser
+     *                                                                         or if
+     *                                                                         class
+     *                                                                         loader
+     *                                                                         security
+     *                                                                         issues
+     *                                                                         prevent
+     *                                                                         its
+     *                                                                         being
+     *                                                                         loaded.
      * @see org.apache.commons.net.ftp.parser.DefaultFTPFileEntryParserFactory
      * @see org.apache.commons.net.ftp.parser.FTPFileEntryParserFactory
      * @see org.apache.commons.net.ftp.FTPFileEntryParser
@@ -2283,7 +3370,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Version of {@link #listFiles(String)} which allows a filter to be provided. For example: {@code listFiles("site", FTPFileFilters.DIRECTORY);}
+     * Version of {@link #listFiles(String)} which allows a filter to be provided.
+     * For example: {@code listFiles("site", FTPFileFilters.DIRECTORY);}
      *
      * @param pathname the initial path, may be null
      * @param filter   the filter, non-null
@@ -2296,63 +3384,106 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Fetches the system help information from the server and returns the full string.
+     * Fetches the system help information from the server and returns the full
+     * string.
      *
-     * @return The system help string obtained from the server. null if the information could not be obtained.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @return The system help string obtained from the server. null if the
+     *         information could not be obtained.
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public String listHelp() throws IOException {
         return FTPReply.isPositiveCompletion(help()) ? getReplyString() : null;
     }
 
     /**
-     * Fetches the help information for a given command from the server and returns the full string.
+     * Fetches the help information for a given command from the server and returns
+     * the full string.
      *
      * @param command The command on which to ask for help.
-     * @return The command help string obtained from the server. null if the information could not be obtained.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @return The command help string obtained from the server. null if the
+     *         information could not be obtained.
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public String listHelp(final String command) throws IOException {
         return FTPReply.isPositiveCompletion(help(command)) ? getReplyString() : null;
     }
 
     /**
-     * Obtain a list of file names in the current working directory This information is obtained through the NLST command. If the current directory contains no
-     * files, a zero length array is returned only if the FTP server returned a positive completion code, otherwise, null is returned (the FTP server returned a
-     * 550 error No files found.). If the directory is not empty, an array of file names in the directory is returned.
+     * Obtain a list of file names in the current working directory This information
+     * is obtained through the NLST command. If the current directory contains no
+     * files, a zero length array is returned only if the FTP server returned a
+     * positive completion code, otherwise, null is returned (the FTP server
+     * returned a
+     * 550 error No files found.). If the directory is not empty, an array of file
+     * names in the directory is returned.
      *
-     * @return The list of file names contained in the current working directory. null if the list could not be obtained. If there are no file names in the
+     * @return The list of file names contained in the current working directory.
+     *         null if the list could not be obtained. If there are no file names in
+     *         the
      *         directory, a zero-length array is returned.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public String[] listNames() throws IOException {
         return listNames(null);
     }
 
     /**
-     * Obtain a list of file names in a directory (or just the name of a given file, which is not particularly useful). This information is obtained through the
-     * NLST command. If the given pathname is a directory and contains no files, a zero length array is returned only if the FTP server returned a positive
-     * completion code, otherwise null is returned (the FTP server returned a 550 error No files found.). If the directory is not empty, an array of file names
-     * in the directory is returned. If the pathname corresponds to a file, only that file will be listed. The server may or may not expand glob expressions.
+     * Obtain a list of file names in a directory (or just the name of a given file,
+     * which is not particularly useful). This information is obtained through the
+     * NLST command. If the given pathname is a directory and contains no files, a
+     * zero length array is returned only if the FTP server returned a positive
+     * completion code, otherwise null is returned (the FTP server returned a 550
+     * error No files found.). If the directory is not empty, an array of file names
+     * in the directory is returned. If the pathname corresponds to a file, only
+     * that file will be listed. The server may or may not expand glob expressions.
      *
-     * @param pathname The file or directory to list. Warning: the server may treat a leading '-' as an option introducer. If so, try using an absolute path, or
-     *                 prefix the path with ./ (unix style servers). Some servers may support "--" as meaning end of options, in which case "-- -xyz" should
+     * @param pathname The file or directory to list. Warning: the server may treat
+     *                 a leading '-' as an option introducer. If so, try using an
+     *                 absolute path, or
+     *                 prefix the path with ./ (unix style servers). Some servers
+     *                 may support "--" as meaning end of options, in which case "--
+     *                 -xyz" should
      *                 work.
-     * @return The list of file names contained in the given path. null if the list could not be obtained. If there are no file names in the directory, a
+     * @return The list of file names contained in the given path. null if the list
+     *         could not be obtained. If there are no file names in the directory, a
      *         zero-length array is returned.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public String[] listNames(final String pathname) throws IOException {
         final ArrayList<String> results = new ArrayList<>();
@@ -2360,7 +3491,8 @@ public class FTPClient extends FTP implements Configurable {
             if (socket == null) {
                 return null;
             }
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), getControlEncoding()))) {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(socket.getInputStream(), getControlEncoding()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     results.add(line);
@@ -2379,10 +3511,16 @@ public class FTPClient extends FTP implements Configurable {
      * @param user     The user name to login under.
      * @param password The password to use.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean login(final String user, final String password) throws IOException {
         user(user);
@@ -2398,17 +3536,24 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Login to the FTP server using the provided username, password, and account. If no account is required by the server, only the username and password, the
+     * Login to the FTP server using the provided username, password, and account.
+     * If no account is required by the server, only the username and password, the
      * account information is not used.
      *
      * @param user     The user name to login under.
      * @param password The password to use.
      * @param account  The account to use.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean login(final String user, final String password, final String account) throws IOException {
         user(user);
@@ -2434,36 +3579,54 @@ public class FTPClient extends FTP implements Configurable {
      * Logout of the FTP server by sending the QUIT command.
      *
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean logout() throws IOException {
         return FTPReply.isPositiveCompletion(quit());
     }
 
     /**
-     * Creates a new subdirectory on the FTP server in the current directory (if a relative pathname is given) or where specified (if an absolute pathname is
+     * Creates a new subdirectory on the FTP server in the current directory (if a
+     * relative pathname is given) or where specified (if an absolute pathname is
      * given).
      *
      * @param pathname The pathname of the directory to create.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean makeDirectory(final String pathname) throws IOException {
         return FTPReply.isPositiveCompletion(mkd(pathname));
     }
 
     /**
-     * Issue the FTP MDTM command (not supported by all servers) to retrieve the last modification time of a file. The modification string should be in the ISO
-     * 3077 form "yyyyMMDDhhmmss(.xxx)?". The timestamp represented should also be in GMT, but not all FTP servers honor this.
+     * Issue the FTP MDTM command (not supported by all servers) to retrieve the
+     * last modification time of a file. The modification string should be in the
+     * ISO
+     * 3077 form "yyyyMMDDhhmmss(.xxx)?". The timestamp represented should also be
+     * in GMT, but not all FTP servers honor this.
      *
      * @param pathname The file path to query.
-     * @return A Calendar representing the last file modification time, may be {@code null}. The Calendar timestamp will be null if a parse error occurs.
+     * @return A Calendar representing the last file modification time, may be
+     *         {@code null}. The Calendar timestamp will be null if a parse error
+     *         occurs.
      * @throws IOException if an I/O error occurs.
      * @since 3.8.0
      */
@@ -2476,11 +3639,16 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Issue the FTP MDTM command (not supported by all servers) to retrieve the last modification time of a file. The modification string should be in the ISO
-     * 3077 form "yyyyMMDDhhmmss(.xxx)?". The timestamp represented should also be in GMT, but not all FTP servers honor this.
+     * Issue the FTP MDTM command (not supported by all servers) to retrieve the
+     * last modification time of a file. The modification string should be in the
+     * ISO
+     * 3077 form "yyyyMMDDhhmmss(.xxx)?". The timestamp represented should also be
+     * in GMT, but not all FTP servers honor this.
      *
      * @param pathname The file path to query.
-     * @return A FTPFile representing the last file modification time, may be {@code null}. The FTPFile timestamp will be null if a parse error occurs.
+     * @return A FTPFile representing the last file modification time, may be
+     *         {@code null}. The FTPFile timestamp will be null if a parse error
+     *         occurs.
      * @throws IOException if an I/O error occurs.
      * @since 3.4
      */
@@ -2497,11 +3665,16 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Issue the FTP MDTM command (not supported by all servers) to retrieve the last modification time of a file. The modification string should be in the ISO
-     * 3077 form "yyyyMMDDhhmmss(.xxx)?". The timestamp represented should also be in GMT, but not all FTP servers honor this.
+     * Issue the FTP MDTM command (not supported by all servers) to retrieve the
+     * last modification time of a file. The modification string should be in the
+     * ISO
+     * 3077 form "yyyyMMDDhhmmss(.xxx)?". The timestamp represented should also be
+     * in GMT, but not all FTP servers honor this.
      *
      * @param pathname The file path to query.
-     * @return An Instant representing the last file modification time, may be {@code null}. The Instant timestamp will be null if a parse error occurs.
+     * @return An Instant representing the last file modification time, may be
+     *         {@code null}. The Instant timestamp will be null if a parse error
+     *         occurs.
      * @throws IOException if an I/O error occurs.
      * @since 3.9.0
      */
@@ -2535,7 +3708,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Generate a directory listing for the current directory using the MLSD command.
+     * Generate a directory listing for the current directory using the MLSD
+     * command.
      *
      * @return the array of file entries
      * @throws IOException on error
@@ -2587,7 +3761,8 @@ public class FTPClient extends FTP implements Configurable {
                 reply = " " + reply;
             }
             /*
-             * check the response makes sense. Must have space before fact(s) and between fact(s) and file name Fact(s) can be absent, so at least 3 chars are
+             * check the response makes sense. Must have space before fact(s) and between
+             * fact(s) and file name Fact(s) can be absent, so at least 3 chars are
              * needed.
              */
             if (reply.length() < 3) {
@@ -2603,11 +3778,18 @@ public class FTPClient extends FTP implements Configurable {
     /**
      * Returns the pathname of the current working directory.
      *
-     * @return The pathname of the current working directory. If it cannot be obtained, returns null.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @return The pathname of the current working directory. If it cannot be
+     *         obtained, returns null.
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public String printWorkingDirectory() throws IOException {
         if (pwd() != FTPReply.PATHNAME_CREATED) {
@@ -2617,18 +3799,26 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Reinitialize the FTP session. Not all FTP servers support this command, which issues the FTP REIN command.
+     * Reinitialize the FTP session. Not all FTP servers support this command, which
+     * issues the FTP REIN command.
      *
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      * @since 3.4 (made public)
      */
     public boolean reinitialize() throws IOException {
         rein();
-        if (FTPReply.isPositiveCompletion(_replyCode) || FTPReply.isPositivePreliminary(_replyCode) && FTPReply.isPositiveCompletion(getReply())) {
+        if (FTPReply.isPositiveCompletion(_replyCode)
+                || FTPReply.isPositivePreliminary(_replyCode) && FTPReply.isPositiveCompletion(getReply())) {
             initDefaults();
             return true;
         }
@@ -2637,90 +3827,137 @@ public class FTPClient extends FTP implements Configurable {
 
     // For server to server transfers
     /**
-     * Initiate a server to server file transfer. This method tells the server to which the client is connected to append to a given file on the other server.
-     * The other server must have had a {@code remoteRetrieve} issued to it by another FTPClient.
+     * Initiate a server to server file transfer. This method tells the server to
+     * which the client is connected to append to a given file on the other server.
+     * The other server must have had a {@code remoteRetrieve} issued to it by
+     * another FTPClient.
      *
-     * @param fileName The name of the file to be appended to, or if the file does not exist, the name to call the file being stored.
+     * @param fileName The name of the file to be appended to, or if the file does
+     *                 not exist, the name to call the file being stored.
      *
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean remoteAppend(final String fileName) throws IOException {
-        if (dataConnectionMode == ACTIVE_REMOTE_DATA_CONNECTION_MODE || dataConnectionMode == PASSIVE_REMOTE_DATA_CONNECTION_MODE) {
+        if (dataConnectionMode == ACTIVE_REMOTE_DATA_CONNECTION_MODE
+                || dataConnectionMode == PASSIVE_REMOTE_DATA_CONNECTION_MODE) {
             return FTPReply.isPositivePreliminary(appe(fileName));
         }
         return false;
     }
 
     /**
-     * Initiate a server to server file transfer. This method tells the server to which the client is connected to retrieve a given file from the other server.
+     * Initiate a server to server file transfer. This method tells the server to
+     * which the client is connected to retrieve a given file from the other server.
      *
      * @param fileName The name of the file to retrieve.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean remoteRetrieve(final String fileName) throws IOException {
-        if (dataConnectionMode == ACTIVE_REMOTE_DATA_CONNECTION_MODE || dataConnectionMode == PASSIVE_REMOTE_DATA_CONNECTION_MODE) {
+        if (dataConnectionMode == ACTIVE_REMOTE_DATA_CONNECTION_MODE
+                || dataConnectionMode == PASSIVE_REMOTE_DATA_CONNECTION_MODE) {
             return FTPReply.isPositivePreliminary(retr(fileName));
         }
         return false;
     }
 
     /**
-     * Initiate a server to server file transfer. This method tells the server to which the client is connected to store a file on the other server using the
-     * given file name. The other server must have had a {@code remoteRetrieve} issued to it by another FTPClient.
+     * Initiate a server to server file transfer. This method tells the server to
+     * which the client is connected to store a file on the other server using the
+     * given file name. The other server must have had a {@code remoteRetrieve}
+     * issued to it by another FTPClient.
      *
      * @param fileName The name to call the file that is to be stored.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean remoteStore(final String fileName) throws IOException {
-        if (dataConnectionMode == ACTIVE_REMOTE_DATA_CONNECTION_MODE || dataConnectionMode == PASSIVE_REMOTE_DATA_CONNECTION_MODE) {
+        if (dataConnectionMode == ACTIVE_REMOTE_DATA_CONNECTION_MODE
+                || dataConnectionMode == PASSIVE_REMOTE_DATA_CONNECTION_MODE) {
             return FTPReply.isPositivePreliminary(stor(fileName));
         }
         return false;
     }
 
     /**
-     * Initiate a server to server file transfer. This method tells the server to which the client is connected to store a file on the other server using a
-     * unique file name. The other server must have had a {@code remoteRetrieve} issued to it by another FTPClient. Many FTP servers require that a base
-     * file name be given from which the unique file name can be derived. For those servers use the other version of {@code remoteStoreUnique}
+     * Initiate a server to server file transfer. This method tells the server to
+     * which the client is connected to store a file on the other server using a
+     * unique file name. The other server must have had a {@code remoteRetrieve}
+     * issued to it by another FTPClient. Many FTP servers require that a base
+     * file name be given from which the unique file name can be derived. For those
+     * servers use the other version of {@code remoteStoreUnique}
      *
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean remoteStoreUnique() throws IOException {
-        if (dataConnectionMode == ACTIVE_REMOTE_DATA_CONNECTION_MODE || dataConnectionMode == PASSIVE_REMOTE_DATA_CONNECTION_MODE) {
+        if (dataConnectionMode == ACTIVE_REMOTE_DATA_CONNECTION_MODE
+                || dataConnectionMode == PASSIVE_REMOTE_DATA_CONNECTION_MODE) {
             return FTPReply.isPositivePreliminary(stou());
         }
         return false;
     }
 
     /**
-     * Initiate a server to server file transfer. This method tells the server to which the client is connected to store a file on the other server using a
-     * unique file name based on the given file name. The other server must have had a {@code remoteRetrieve} issued to it by another FTPClient.
+     * Initiate a server to server file transfer. This method tells the server to
+     * which the client is connected to store a file on the other server using a
+     * unique file name based on the given file name. The other server must have had
+     * a {@code remoteRetrieve} issued to it by another FTPClient.
      *
-     * @param fileName The name on which to base the file name of the file that is to be stored.
+     * @param fileName The name on which to base the file name of the file that is
+     *                 to be stored.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean remoteStoreUnique(final String fileName) throws IOException {
-        if (dataConnectionMode == ACTIVE_REMOTE_DATA_CONNECTION_MODE || dataConnectionMode == PASSIVE_REMOTE_DATA_CONNECTION_MODE) {
+        if (dataConnectionMode == ACTIVE_REMOTE_DATA_CONNECTION_MODE
+                || dataConnectionMode == PASSIVE_REMOTE_DATA_CONNECTION_MODE) {
             return FTPReply.isPositivePreliminary(stou(fileName));
         }
         return false;
@@ -2731,10 +3968,16 @@ public class FTPClient extends FTP implements Configurable {
      *
      * @param pathname The pathname of the directory to remove.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean removeDirectory(final String pathname) throws IOException {
         return FTPReply.isPositiveCompletion(rmd(pathname));
@@ -2746,10 +3989,16 @@ public class FTPClient extends FTP implements Configurable {
      * @param from The name of the remote file to rename.
      * @param to   The new name of the remote file.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean rename(final String from, final String to) throws IOException {
         if (!FTPReply.isPositiveIntermediate(rnfr(from))) {
@@ -2759,16 +4008,26 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Restart a {@code STREAM_TRANSFER_MODE} file transfer starting from the given offset. This will only work on FTP servers supporting the REST comand
-     * for the stream transfer mode. However, most FTP servers support this. Any subsequent file transfer will start reading or writing the remote file from the
+     * Restart a {@code STREAM_TRANSFER_MODE} file transfer starting from the given
+     * offset. This will only work on FTP servers supporting the REST comand
+     * for the stream transfer mode. However, most FTP servers support this. Any
+     * subsequent file transfer will start reading or writing the remote file from
+     * the
      * indicated offset.
      *
-     * @param offset The offset into the remote file at which to start the next file transfer.
+     * @param offset The offset into the remote file at which to start the next file
+     *               transfer.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      * @since 3.1 (changed from private to protected)
      */
     protected boolean restart(final long offset) throws IOException {
@@ -2777,21 +4036,50 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Retrieves a named file from the server and writes it to the given OutputStream. This method does NOT close the given OutputStream. If the current file
-     * type is ASCII, line separators in the file are converted to the local representation.
+     * Retrieves a named file from the server and writes it to the given
+     * OutputStream. This method does NOT close the given OutputStream. If the
+     * current file
+     * type is ASCII, line separators in the file are converted to the local
+     * representation.
      * <p>
-     * Note: if you have used {@link #setRestartOffset(long)}, the file data will start from the selected offset.
+     * Note: if you have used {@link #setRestartOffset(long)}, the file data will
+     * start from the selected offset.
      *
      * @param remote The name of the remote file.
      * @param local  The local OutputStream to which to write the file.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException                  If the FTP server prematurely closes the connection as a result of the client being idle or some
-     *                                                       other reason causing the server to send FTP reply code 421. This exception may be caught either as
-     *                                                       an IOException or independently as itself.
-     * @throws org.apache.commons.net.io.CopyStreamException If an I/O error occurs while actually transferring the file. The CopyStreamException allows you to
-     *                                                       determine the number of bytes transferred and the IOException causing the error. This exception may
-     *                                                       be caught either as an IOException or independently as itself.
-     * @throws IOException                                   If an I/O error occurs while either sending a command to the server or receiving a reply from the
+     * @throws FTPConnectionClosedException                  If the FTP server
+     *                                                       prematurely closes the
+     *                                                       connection as a result
+     *                                                       of the client being
+     *                                                       idle or some
+     *                                                       other reason causing
+     *                                                       the server to send FTP
+     *                                                       reply code 421. This
+     *                                                       exception may be caught
+     *                                                       either as
+     *                                                       an IOException or
+     *                                                       independently as
+     *                                                       itself.
+     * @throws org.apache.commons.net.io.CopyStreamException If an I/O error occurs
+     *                                                       while actually
+     *                                                       transferring the file.
+     *                                                       The CopyStreamException
+     *                                                       allows you to
+     *                                                       determine the number of
+     *                                                       bytes transferred and
+     *                                                       the IOException causing
+     *                                                       the error. This
+     *                                                       exception may
+     *                                                       be caught either as an
+     *                                                       IOException or
+     *                                                       independently as
+     *                                                       itself.
+     * @throws IOException                                   If an I/O error occurs
+     *                                                       while either sending a
+     *                                                       command to the server
+     *                                                       or receiving a reply
+     *                                                       from the
      *                                                       server.
      */
     public boolean retrieveFile(final String remote, final OutputStream local) throws IOException {
@@ -2799,35 +4087,56 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Returns an InputStream from which a named file from the server can be read. If the current file type is ASCII, the returned InputStream will convert line
-     * separators in the file to the local representation. You must close the InputStream when you finish reading from it. The InputStream itself will take care
+     * Returns an InputStream from which a named file from the server can be read.
+     * If the current file type is ASCII, the returned InputStream will convert line
+     * separators in the file to the local representation. You must close the
+     * InputStream when you finish reading from it. The InputStream itself will take
+     * care
      * of closing the parent data connection socket upon being closed.
      * <p>
-     * <b>To finalize the file transfer you must call {@link #completePendingCommand completePendingCommand } and check its return value to verify success.</b>
+     * <b>To finalize the file transfer you must call {@link #completePendingCommand
+     * completePendingCommand } and check its return value to verify success.</b>
      * If this is not done, subsequent commands may behave unexpectedly.
      * <p>
-     * Note: if you have used {@link #setRestartOffset(long)}, the file data will start from the selected offset.
+     * Note: if you have used {@link #setRestartOffset(long)}, the file data will
+     * start from the selected offset.
      *
      * @param remote The name of the remote file.
-     * @return An InputStream from which the remote file can be read. If the data connection cannot be opened (e.g., the file does not exist), null is returned
-     *         (in which case you may check the reply code to determine the exact reason for failure).
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @return An InputStream from which the remote file can be read. If the data
+     *         connection cannot be opened (e.g., the file does not exist), null is
+     *         returned
+     *         (in which case you may check the reply code to determine the exact
+     *         reason for failure).
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public InputStream retrieveFileStream(final String remote) throws IOException {
         return _retrieveFileStream(FTPCmd.RETR.getCommand(), remote);
     }
 
     /**
-     * Sends a NOOP command to the FTP server. This is useful for preventing server timeouts.
+     * Sends a NOOP command to the FTP server. This is useful for preventing server
+     * timeouts.
      *
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean sendNoOp() throws IOException {
         return FTPReply.isPositiveCompletion(noop());
@@ -2838,17 +4147,24 @@ public class FTPClient extends FTP implements Configurable {
      *
      * @param arguments The site specific command and arguments.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean sendSiteCommand(final String arguments) throws IOException {
         return FTPReply.isPositiveCompletion(site(arguments));
     }
 
     /**
-     * Sets the external IP address in active mode. Useful when there are multiple network cards.
+     * Sets the external IP address in active mode. Useful when there are multiple
+     * network cards.
      *
      * @param ipAddress The external IP address of this machine.
      * @throws UnknownHostException if the ipAddress cannot be resolved
@@ -2871,12 +4187,15 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Enables or disables automatic server encoding detection (only UTF-8 supported).
+     * Enables or disables automatic server encoding detection (only UTF-8
+     * supported).
      * <p>
-     * Does not affect existing connections; must be invoked before a connection is established.
+     * Does not affect existing connections; must be invoked before a connection is
+     * established.
      * </p>
      *
-     * @param autoDetectEncoding If true, automatic server encoding detection will be enabled.
+     * @param autoDetectEncoding If true, automatic server encoding detection will
+     *                           be enabled.
      */
     public void setAutodetectUTF8(final boolean autoDetectEncoding) {
         this.autoDetectEncoding = autoDetectEncoding;
@@ -2885,7 +4204,8 @@ public class FTPClient extends FTP implements Configurable {
     /**
      * Sets the internal buffer size for buffered data streams.
      *
-     * @param bufferSize The size of the buffer. Use a non-positive value to use the default.
+     * @param bufferSize The size of the buffer. Use a non-positive value to use the
+     *                   default.
      */
     public void setBufferSize(final int bufferSize) {
         this.bufferSize = bufferSize;
@@ -2916,12 +4236,14 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the duration to wait between sending control connection keepalive messages when processing file upload or download.
+     * Sets the duration to wait between sending control connection keepalive
+     * messages when processing file upload or download.
      * <p>
      * See the class Javadoc section "Control channel keep-alive feature"
      * </p>
      *
-     * @param controlIdle the duration to wait between keepalive messages. Zero (or less) disables.
+     * @param controlIdle the duration to wait between keepalive messages. Zero (or
+     *                    less) disables.
      * @since 3.9.0
      * @see #setControlKeepAliveReplyTimeout(Duration)
      */
@@ -2930,13 +4252,15 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the duration to wait between sending control connection keepalive messages when processing file upload or download.
+     * Sets the duration to wait between sending control connection keepalive
+     * messages when processing file upload or download.
      * <p>
      * See the class Javadoc section "Control channel keep-alive feature"
      * </p>
      *
      * @deprecated Use {@link #setControlKeepAliveTimeout(Duration)}.
-     * @param controlIdleSeconds the wait in seconds between keepalive messages. Zero (or less) disables.
+     * @param controlIdleSeconds the wait in seconds between keepalive messages.
+     *                           Zero (or less) disables.
      * @since 3.0
      * @see #setControlKeepAliveReplyTimeout(int)
      */
@@ -2946,7 +4270,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the listener to be used when performing store/retrieve operations. The default value (if not set) is {@code null}.
+     * Sets the listener to be used when performing store/retrieve operations. The
+     * default value (if not set) is {@code null}.
      *
      * @param copyStreamListener to be used, may be {@code null} to disable
      * @since 3.0
@@ -2956,13 +4281,17 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the timeout to use when reading from the data connection. This timeout will be set immediately after opening the data connection, provided that the
+     * Sets the timeout to use when reading from the data connection. This timeout
+     * will be set immediately after opening the data connection, provided that the
      * value is &ge; 0.
      * <p>
-     * <b>Note:</b> the timeout will also be applied when calling accept() whilst establishing an active local data connection.
+     * <b>Note:</b> the timeout will also be applied when calling accept() whilst
+     * establishing an active local data connection.
      * </p>
      *
-     * @param timeout The default timeout that is used when opening a data connection socket. The value 0 (or null) means an infinite timeout.
+     * @param timeout The default timeout that is used when opening a data
+     *                connection socket. The value 0 (or null) means an infinite
+     *                timeout.
      * @since 3.9.0
      */
     public void setDataTimeout(final Duration timeout) {
@@ -2970,14 +4299,19 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the timeout in milliseconds to use when reading from the data connection. This timeout will be set immediately after opening the data connection,
+     * Sets the timeout in milliseconds to use when reading from the data
+     * connection. This timeout will be set immediately after opening the data
+     * connection,
      * provided that the value is &ge; 0.
      * <p>
-     * <b>Note:</b> the timeout will also be applied when calling accept() whilst establishing an active local data connection.
+     * <b>Note:</b> the timeout will also be applied when calling accept() whilst
+     * establishing an active local data connection.
      * </p>
      *
      * @deprecated Use {@link #setDataTimeout(Duration)}.
-     * @param timeoutMillis The default timeout in milliseconds that is used when opening a data connection socket. The value 0 means an infinite timeout.
+     * @param timeoutMillis The default timeout in milliseconds that is used when
+     *                      opening a data connection socket. The value 0 means an
+     *                      infinite timeout.
      */
     @Deprecated
     public void setDataTimeout(final int timeoutMillis) {
@@ -2985,14 +4319,22 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the file structure. The default structure is {@code FTP.FILE_STRUCTURE} if this method is never called or if a connect method is called.
+     * Sets the file structure. The default structure is {@code FTP.FILE_STRUCTURE}
+     * if this method is never called or if a connect method is called.
      *
-     * @param fileStructure The structure of the file (one of the FTP class {@code _STRUCTURE} constants).
+     * @param fileStructure The structure of the file (one of the FTP class
+     *                      {@code _STRUCTURE} constants).
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean setFileStructure(final int fileStructure) throws IOException {
         if (FTPReply.isPositiveCompletion(stru(fileStructure))) {
@@ -3003,15 +4345,24 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the transfer mode. The default transfer mode {@code FTP.STREAM_TRANSFER_MODE} if this method is never called or if a connect method is
+     * Sets the transfer mode. The default transfer mode
+     * {@code FTP.STREAM_TRANSFER_MODE} if this method is never called or if a
+     * connect method is
      * called.
      *
-     * @param fileTransferMode The new transfer mode to use (one of the FTP class {@code _TRANSFER_MODE} constants).
+     * @param fileTransferMode The new transfer mode to use (one of the FTP class
+     *                         {@code _TRANSFER_MODE} constants).
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean setFileTransferMode(final int fileTransferMode) throws IOException {
         if (FTPReply.isPositiveCompletion(mode(fileTransferMode))) {
@@ -3022,20 +4373,31 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the file type to be transferred. This should be one of {@code FTP.ASCII_FILE_TYPE}, {@code FTP.BINARY_FILE_TYPE}, etc. The file type
-     * only needs to be set when you want to change the type. After changing it, the new type stays in effect until you change it again. The default file type
+     * Sets the file type to be transferred. This should be one of
+     * {@code FTP.ASCII_FILE_TYPE}, {@code FTP.BINARY_FILE_TYPE}, etc. The file type
+     * only needs to be set when you want to change the type. After changing it, the
+     * new type stays in effect until you change it again. The default file type
      * is {@code FTP.ASCII_FILE_TYPE} if this method is never called. <br>
-     * The server default is supposed to be ASCII (see RFC 959), however many ftp servers default to BINARY. <b>To ensure correct operation with all servers,
-     * always specify the appropriate file type after connecting to the server.</b> <br>
+     * The server default is supposed to be ASCII (see RFC 959), however many ftp
+     * servers default to BINARY. <b>To ensure correct operation with all servers,
+     * always specify the appropriate file type after connecting to the server.</b>
+     * <br>
      * <p>
-     * <b>N.B.</b> currently calling any connect method will reset the type to FTP.ASCII_FILE_TYPE.
+     * <b>N.B.</b> currently calling any connect method will reset the type to
+     * FTP.ASCII_FILE_TYPE.
      *
      * @param fileType The {@code _FILE_TYPE} constant indicating the type of file.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean setFileType(final int fileType) throws IOException {
         if (FTPReply.isPositiveCompletion(type(fileType))) {
@@ -3047,24 +4409,42 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the file type to be transferred and the format. The type should be one of {@code FTP.ASCII_FILE_TYPE}, {@code FTP.BINARY_FILE_TYPE},
-     * etc. The file type only needs to be set when you want to change the type. After changing it, the new type stays in effect until you change it again. The
-     * default file type is {@code FTP.ASCII_FILE_TYPE} if this method is never called. <br>
-     * The server default is supposed to be ASCII (see RFC 959), however many ftp servers default to BINARY. <b>To ensure correct operation with all servers,
-     * always specify the appropriate file type after connecting to the server.</b> <br>
-     * The format should be one of the FTP class {@code TEXT_FORMAT} constants, or if the type is {@code FTP.LOCAL_FILE_TYPE}, the format should
-     * be the byte size for that type. The default format is {@code FTP.NON_PRINT_TEXT_FORMAT} if this method is never called.
+     * Sets the file type to be transferred and the format. The type should be one
+     * of {@code FTP.ASCII_FILE_TYPE}, {@code FTP.BINARY_FILE_TYPE},
+     * etc. The file type only needs to be set when you want to change the type.
+     * After changing it, the new type stays in effect until you change it again.
+     * The
+     * default file type is {@code FTP.ASCII_FILE_TYPE} if this method is never
+     * called. <br>
+     * The server default is supposed to be ASCII (see RFC 959), however many ftp
+     * servers default to BINARY. <b>To ensure correct operation with all servers,
+     * always specify the appropriate file type after connecting to the server.</b>
+     * <br>
+     * The format should be one of the FTP class {@code TEXT_FORMAT} constants, or
+     * if the type is {@code FTP.LOCAL_FILE_TYPE}, the format should
+     * be the byte size for that type. The default format is
+     * {@code FTP.NON_PRINT_TEXT_FORMAT} if this method is never called.
      * <p>
-     * <b>N.B.</b> currently calling any connect method will reset the type to FTP.ASCII_FILE_TYPE and the formatOrByteSize to FTP.NON_PRINT_TEXT_FORMAT.
+     * <b>N.B.</b> currently calling any connect method will reset the type to
+     * FTP.ASCII_FILE_TYPE and the formatOrByteSize to FTP.NON_PRINT_TEXT_FORMAT.
      * </p>
      *
-     * @param fileType         The {@code _FILE_TYPE} constant indicating the type of file.
-     * @param formatOrByteSize The format of the file (one of the {@code _FORMAT} constants). In the case of {@code LOCAL_FILE_TYPE}, the byte size.
+     * @param fileType         The {@code _FILE_TYPE} constant indicating the type
+     *                         of file.
+     * @param formatOrByteSize The format of the file (one of the {@code _FORMAT}
+     *                         constants). In the case of {@code LOCAL_FILE_TYPE},
+     *                         the byte size.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean setFileType(final int fileType, final int formatOrByteSize) throws IOException {
         if (FTPReply.isPositiveCompletion(type(fileType, formatOrByteSize))) {
@@ -3076,12 +4456,17 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets whether the IP address from the server's response should be used. Until 3.9.0, this has always been the case. Beginning with 3.9.0, that IP address
-     * will be silently ignored, and replaced with the remote IP address of the control connection, unless this configuration option is given, which restores
-     * the old behavior. To enable this by default, use the system property {@link FTPClient#FTP_IP_ADDRESS_FROM_PASV_RESPONSE}.
+     * Sets whether the IP address from the server's response should be used. Until
+     * 3.9.0, this has always been the case. Beginning with 3.9.0, that IP address
+     * will be silently ignored, and replaced with the remote IP address of the
+     * control connection, unless this configuration option is given, which restores
+     * the old behavior. To enable this by default, use the system property
+     * {@link FTPClient#FTP_IP_ADDRESS_FROM_PASV_RESPONSE}.
      *
-     * @param ipAddressFromPasvResponse True, if the IP address from the server's response should be used (pre-3.9.0 compatible behavior), or false (ignore
-     *                                       that IP address).
+     * @param ipAddressFromPasvResponse True, if the IP address from the server's
+     *                                  response should be used (pre-3.9.0
+     *                                  compatible behavior), or false (ignore
+     *                                  that IP address).
      * @see FTPClient#FTP_IP_ADDRESS_FROM_PASV_RESPONSE
      * @see #isIpAddressFromPasvResponse
      * @since 3.9.0
@@ -3091,8 +4476,11 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * You can set this to true if you would like to get hidden files when {@link #listFiles} too. A {@code LIST -a} will be issued to the ftp server. It
-     * depends on your ftp server if you need to call this method, also don't expect to get rid of hidden files if you call this method with "false".
+     * You can set this to true if you would like to get hidden files when
+     * {@link #listFiles} too. A {@code LIST -a} will be issued to the ftp server.
+     * It
+     * depends on your ftp server if you need to call this method, also don't expect
+     * to get rid of hidden files if you call this method with "false".
      *
      * @param listHiddenFiles true if hidden files should be listed
      * @since 2.0
@@ -3102,11 +4490,14 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Issue the FTP MFMT command (not supported by all servers) which sets the last modified time of a file.
+     * Issue the FTP MFMT command (not supported by all servers) which sets the last
+     * modified time of a file.
      *
-     * The timestamp should be in the form {@code yyyyMMDDhhmmss}. It should also be in GMT, but not all servers honor this.
+     * The timestamp should be in the form {@code yyyyMMDDhhmmss}. It should also be
+     * in GMT, but not all servers honor this.
      *
-     * An FTP server would indicate its support of this feature by including "MFMT" in its response to the FEAT command, which may be retrieved by
+     * An FTP server would indicate its support of this feature by including "MFMT"
+     * in its response to the FEAT command, which may be retrieved by
      * FTPClient.features()
      *
      * @param pathname The file path for which last modified time is to be changed.
@@ -3114,7 +4505,8 @@ public class FTPClient extends FTP implements Configurable {
      * @return true if successfully set, false if not
      * @throws IOException if an I/O error occurs.
      * @since 2.2
-     * @see <a href="https://tools.ietf.org/html/draft-somers-ftp-mfxx-04">https://tools.ietf.org/html/draft-somers-ftp-mfxx-04</a>
+     * @see <a href=
+     *      "https://tools.ietf.org/html/draft-somers-ftp-mfxx-04">https://tools.ietf.org/html/draft-somers-ftp-mfxx-04</a>
      */
     public boolean setModificationTime(final String pathname, final String timeval) throws IOException {
         return FTPReply.isPositiveCompletion(mfmt(pathname, timeval));
@@ -3133,7 +4525,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the local IP address to use in passive mode. Useful when there are multiple network cards.
+     * Sets the local IP address to use in passive mode. Useful when there are
+     * multiple network cards.
      *
      * @param passiveLocalHost The local IP address of this machine.
      */
@@ -3142,7 +4535,8 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the local IP address to use in passive mode. Useful when there are multiple network cards.
+     * Sets the local IP address to use in passive mode. Useful when there are
+     * multiple network cards.
      *
      * @param ipAddress The local IP address of this machine.
      * @throws UnknownHostException if the ipAddress cannot be resolved
@@ -3152,13 +4546,18 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Enables or disables passive mode NAT workaround. If enabled, a site-local PASV mode reply address will be replaced with the remote host address to which
-     * the PASV mode request was sent (unless that is also a site local address). This gets around the problem that some NAT boxes may change the reply.
+     * Enables or disables passive mode NAT workaround. If enabled, a site-local
+     * PASV mode reply address will be replaced with the remote host address to
+     * which
+     * the PASV mode request was sent (unless that is also a site local address).
+     * This gets around the problem that some NAT boxes may change the reply.
      * <p>
      * The default is true, i.e. site-local replies are replaced.
      * </p>
      *
-     * @deprecated (3.6) use {@link #setPassiveNatWorkaroundStrategy(HostnameResolver)} instead
+     * @deprecated (3.6) use
+     *             {@link #setPassiveNatWorkaroundStrategy(HostnameResolver)}
+     *             instead
      * @param enabled true to enable replacing internal IP's in passive mode.
      */
     @Deprecated
@@ -3167,11 +4566,15 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the workaround strategy to replace the PASV mode reply addresses. This gets around the problem that some NAT boxes may change the reply.
+     * Sets the workaround strategy to replace the PASV mode reply addresses. This
+     * gets around the problem that some NAT boxes may change the reply.
      *
-     * The default implementation is {@code NatServerResolverImpl}, i.e. site-local replies are replaced.
+     * The default implementation is {@code NatServerResolverImpl}, i.e. site-local
+     * replies are replaced.
      *
-     * @param passiveNatWorkaroundStrategy strategy to replace internal IP's in passive mode or null to disable the workaround (i.e. use PASV mode reply
+     * @param passiveNatWorkaroundStrategy strategy to replace internal IP's in
+     *                                     passive mode or null to disable the
+     *                                     workaround (i.e. use PASV mode reply
      *                                     address.)
      * @since 3.6
      */
@@ -3180,9 +4583,11 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the value to be used for the data socket SO_RCVBUF option. If the value is positive, the option will be set when the data socket has been created.
+     * Sets the value to be used for the data socket SO_RCVBUF option. If the value
+     * is positive, the option will be set when the data socket has been created.
      *
-     * @param receiveDataSocketBufferSize The size of the buffer, zero or negative means the value is ignored.
+     * @param receiveDataSocketBufferSize The size of the buffer, zero or negative
+     *                                    means the value is ignored.
      * @since 3.3
      */
     public void setReceieveDataSocketBufferSize(final int receiveDataSocketBufferSize) {
@@ -3190,17 +4595,22 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Enable or disable verification that the remote host taking part of a data connection is the same as the host to which the control connection is attached.
-     * The default is for verification to be enabled. You may set this value at any time, whether the FTPClient is currently connected or not.
+     * Enable or disable verification that the remote host taking part of a data
+     * connection is the same as the host to which the control connection is
+     * attached.
+     * The default is for verification to be enabled. You may set this value at any
+     * time, whether the FTPClient is currently connected or not.
      *
-     * @param remoteVerificationEnabled True to enable verification, false to disable verification.
+     * @param remoteVerificationEnabled True to enable verification, false to
+     *                                  disable verification.
      */
     public void setRemoteVerificationEnabled(final boolean remoteVerificationEnabled) {
         this.remoteVerificationEnabled = remoteVerificationEnabled;
     }
 
     /**
-     * Sets the external IP address to report in EPRT/PORT commands in active mode. Useful when there are multiple network cards.
+     * Sets the external IP address to report in EPRT/PORT commands in active mode.
+     * Useful when there are multiple network cards.
      *
      * @param ipAddress The external IP address of this machine.
      * @throws UnknownHostException if the ipAddress cannot be resolved
@@ -3214,14 +4624,17 @@ public class FTPClient extends FTP implements Configurable {
     /**
      * Sets the restart offset for file transfers.
      * <p>
-     * The restart command is not sent to the server immediately. It is sent when a data connection is created as part of a subsequent command. The restart
+     * The restart command is not sent to the server immediately. It is sent when a
+     * data connection is created as part of a subsequent command. The restart
      * marker is reset to zero after use.
      * </p>
      * <p>
-     * <b>Note: This method should only be invoked immediately prior to the transfer to which it applies.</b>
+     * <b>Note: This method should only be invoked immediately prior to the transfer
+     * to which it applies.</b>
      * </p>
      *
-     * @param offset The offset into the remote file at which to start the next file transfer. This must be a value greater than or equal to zero.
+     * @param offset The offset into the remote file at which to start the next file
+     *               transfer. This must be a value greater than or equal to zero.
      */
     public void setRestartOffset(final long offset) {
         if (offset >= 0) {
@@ -3230,9 +4643,11 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets the value to be used for the data socket SO_SNDBUF option. If the value is positive, the option will be set when the data socket has been created.
+     * Sets the value to be used for the data socket SO_SNDBUF option. If the value
+     * is positive, the option will be set when the data socket has been created.
      *
-     * @param sendDataSocketBufferSize The size of the buffer, zero or negative means the value is ignored.
+     * @param sendDataSocketBufferSize The size of the buffer, zero or negative
+     *                                 means the value is ignored.
      * @since 3.3
      */
     public void setSendDataSocketBufferSize(final int sendDataSocketBufferSize) {
@@ -3240,10 +4655,15 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Sets whether to use EPSV with IPv4. Might be worth enabling in some circumstances.
+     * Sets whether to use EPSV with IPv4. Might be worth enabling in some
+     * circumstances.
      *
-     * For example, when using IPv4 with NAT it may work with some rare configurations. E.g. if FTP server has a static PASV address (external network) and the
-     * client is coming from another internal network. In that case the data connection after PASV command would fail, while EPSV would make the client succeed
+     * For example, when using IPv4 with NAT it may work with some rare
+     * configurations. E.g. if FTP server has a static PASV address (external
+     * network) and the
+     * client is coming from another internal network. In that case the data
+     * connection after PASV command would fail, while EPSV would make the client
+     * succeed
      * by taking just the port.
      *
      * @param useEPSVwithIPv4 value to set.
@@ -3258,20 +4678,47 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Stores a file on the server using the given name and taking input from the given InputStream. This method does NOT close the given InputStream. If the
-     * current file type is ASCII, line separators in the file are transparently converted to the NETASCII format (i.e., you should not attempt to create a
+     * Stores a file on the server using the given name and taking input from the
+     * given InputStream. This method does NOT close the given InputStream. If the
+     * current file type is ASCII, line separators in the file are transparently
+     * converted to the NETASCII format (i.e., you should not attempt to create a
      * special InputStream to do this).
      *
      * @param remote The name to give the remote file.
      * @param local  The local InputStream from which to read the file.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException                  If the FTP server prematurely closes the connection as a result of the client being idle or some
-     *                                                       other reason causing the server to send FTP reply code 421. This exception may be caught either as
-     *                                                       an IOException or independently as itself.
-     * @throws org.apache.commons.net.io.CopyStreamException If an I/O error occurs while actually transferring the file. The CopyStreamException allows you to
-     *                                                       determine the number of bytes transferred and the IOException causing the error. This exception may
-     *                                                       be caught either as an IOException or independently as itself.
-     * @throws IOException                                   If an I/O error occurs while either sending a command to the server or receiving a reply from the
+     * @throws FTPConnectionClosedException                  If the FTP server
+     *                                                       prematurely closes the
+     *                                                       connection as a result
+     *                                                       of the client being
+     *                                                       idle or some
+     *                                                       other reason causing
+     *                                                       the server to send FTP
+     *                                                       reply code 421. This
+     *                                                       exception may be caught
+     *                                                       either as
+     *                                                       an IOException or
+     *                                                       independently as
+     *                                                       itself.
+     * @throws org.apache.commons.net.io.CopyStreamException If an I/O error occurs
+     *                                                       while actually
+     *                                                       transferring the file.
+     *                                                       The CopyStreamException
+     *                                                       allows you to
+     *                                                       determine the number of
+     *                                                       bytes transferred and
+     *                                                       the IOException causing
+     *                                                       the error. This
+     *                                                       exception may
+     *                                                       be caught either as an
+     *                                                       IOException or
+     *                                                       independently as
+     *                                                       itself.
+     * @throws IOException                                   If an I/O error occurs
+     *                                                       while either sending a
+     *                                                       command to the server
+     *                                                       or receiving a reply
+     *                                                       from the
      *                                                       server.
      */
     public boolean storeFile(final String remote, final InputStream local) throws IOException {
@@ -3283,41 +4730,82 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Returns an OutputStream through which data can be written to store a file on the server using the given name. If the current file type is ASCII, the
-     * returned OutputStream will convert line separators in the file to the NETASCII format (i.e., you should not attempt to create a special OutputStream to
-     * do this). You must close the OutputStream when you finish writing to it. The OutputStream itself will take care of closing the parent data connection
+     * Returns an OutputStream through which data can be written to store a file on
+     * the server using the given name. If the current file type is ASCII, the
+     * returned OutputStream will convert line separators in the file to the
+     * NETASCII format (i.e., you should not attempt to create a special
+     * OutputStream to
+     * do this). You must close the OutputStream when you finish writing to it. The
+     * OutputStream itself will take care of closing the parent data connection
      * socket upon being closed.
      * <p>
-     * <b>To finalize the file transfer you must call {@link #completePendingCommand completePendingCommand } and check its return value to verify success.</b>
+     * <b>To finalize the file transfer you must call {@link #completePendingCommand
+     * completePendingCommand } and check its return value to verify success.</b>
      * If this is not done, subsequent commands may behave unexpectedly.
      * </p>
      *
      * @param remote The name to give the remote file.
-     * @return An OutputStream through which the remote file can be written. If the data connection cannot be opened (e.g., the file does not exist), null is
-     *         returned (in which case you may check the reply code to determine the exact reason for failure).
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @return An OutputStream through which the remote file can be written. If the
+     *         data connection cannot be opened (e.g., the file does not exist),
+     *         null is
+     *         returned (in which case you may check the reply code to determine the
+     *         exact reason for failure).
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public OutputStream storeFileStream(final String remote) throws IOException {
         return storeFileStream(FTPCmd.STOR, remote);
     }
 
     /**
-     * Stores a file on the server using a unique name assigned by the server and taking input from the given InputStream. This method does NOT close the given
-     * InputStream. If the current file type is ASCII, line separators in the file are transparently converted to the NETASCII format (i.e., you should not
+     * Stores a file on the server using a unique name assigned by the server and
+     * taking input from the given InputStream. This method does NOT close the given
+     * InputStream. If the current file type is ASCII, line separators in the file
+     * are transparently converted to the NETASCII format (i.e., you should not
      * attempt to create a special InputStream to do this).
      *
      * @param local The local InputStream from which to read the file.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException                  If the FTP server prematurely closes the connection as a result of the client being idle or some
-     *                                                       other reason causing the server to send FTP reply code 421. This exception may be caught either as
-     *                                                       an IOException or independently as itself.
-     * @throws org.apache.commons.net.io.CopyStreamException If an I/O error occurs while actually transferring the file. The CopyStreamException allows you to
-     *                                                       determine the number of bytes transferred and the IOException causing the error. This exception may
-     *                                                       be caught either as an IOException or independently as itself.
-     * @throws IOException                                   If an I/O error occurs while either sending a command to the server or receiving a reply from the
+     * @throws FTPConnectionClosedException                  If the FTP server
+     *                                                       prematurely closes the
+     *                                                       connection as a result
+     *                                                       of the client being
+     *                                                       idle or some
+     *                                                       other reason causing
+     *                                                       the server to send FTP
+     *                                                       reply code 421. This
+     *                                                       exception may be caught
+     *                                                       either as
+     *                                                       an IOException or
+     *                                                       independently as
+     *                                                       itself.
+     * @throws org.apache.commons.net.io.CopyStreamException If an I/O error occurs
+     *                                                       while actually
+     *                                                       transferring the file.
+     *                                                       The CopyStreamException
+     *                                                       allows you to
+     *                                                       determine the number of
+     *                                                       bytes transferred and
+     *                                                       the IOException causing
+     *                                                       the error. This
+     *                                                       exception may
+     *                                                       be caught either as an
+     *                                                       IOException or
+     *                                                       independently as
+     *                                                       itself.
+     * @throws IOException                                   If an I/O error occurs
+     *                                                       while either sending a
+     *                                                       command to the server
+     *                                                       or receiving a reply
+     *                                                       from the
      *                                                       server.
      */
     public boolean storeUniqueFile(final InputStream local) throws IOException {
@@ -3325,20 +4813,48 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Stores a file on the server using a unique name derived from the given name and taking input from the given InputStream. This method does NOT close the
-     * given InputStream. If the current file type is ASCII, line separators in the file are transparently converted to the NETASCII format (i.e., you should
+     * Stores a file on the server using a unique name derived from the given name
+     * and taking input from the given InputStream. This method does NOT close the
+     * given InputStream. If the current file type is ASCII, line separators in the
+     * file are transparently converted to the NETASCII format (i.e., you should
      * not attempt to create a special InputStream to do this).
      *
-     * @param remote The name on which to base the unique name given to the remote file.
+     * @param remote The name on which to base the unique name given to the remote
+     *               file.
      * @param local  The local InputStream from which to read the file.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException                  If the FTP server prematurely closes the connection as a result of the client being idle or some
-     *                                                       other reason causing the server to send FTP reply code 421. This exception may be caught either as
-     *                                                       an IOException or independently as itself.
-     * @throws org.apache.commons.net.io.CopyStreamException If an I/O error occurs while actually transferring the file. The CopyStreamException allows you to
-     *                                                       determine the number of bytes transferred and the IOException causing the error. This exception may
-     *                                                       be caught either as an IOException or independently as itself.
-     * @throws IOException                                   If an I/O error occurs while either sending a command to the server or receiving a reply from the
+     * @throws FTPConnectionClosedException                  If the FTP server
+     *                                                       prematurely closes the
+     *                                                       connection as a result
+     *                                                       of the client being
+     *                                                       idle or some
+     *                                                       other reason causing
+     *                                                       the server to send FTP
+     *                                                       reply code 421. This
+     *                                                       exception may be caught
+     *                                                       either as
+     *                                                       an IOException or
+     *                                                       independently as
+     *                                                       itself.
+     * @throws org.apache.commons.net.io.CopyStreamException If an I/O error occurs
+     *                                                       while actually
+     *                                                       transferring the file.
+     *                                                       The CopyStreamException
+     *                                                       allows you to
+     *                                                       determine the number of
+     *                                                       bytes transferred and
+     *                                                       the IOException causing
+     *                                                       the error. This
+     *                                                       exception may
+     *                                                       be caught either as an
+     *                                                       IOException or
+     *                                                       independently as
+     *                                                       itself.
+     * @throws IOException                                   If an I/O error occurs
+     *                                                       while either sending a
+     *                                                       command to the server
+     *                                                       or receiving a reply
+     *                                                       from the
      *                                                       server.
      */
     public boolean storeUniqueFile(final String remote, final InputStream local) throws IOException {
@@ -3346,42 +4862,69 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     /**
-     * Returns an OutputStream through which data can be written to store a file on the server using a unique name assigned by the server. If the current file
-     * type is ASCII, the returned OutputStream will convert line separators in the file to the NETASCII format (i.e., you should not attempt to create a
-     * special OutputStream to do this). You must close the OutputStream when you finish writing to it. The OutputStream itself will take care of closing the
+     * Returns an OutputStream through which data can be written to store a file on
+     * the server using a unique name assigned by the server. If the current file
+     * type is ASCII, the returned OutputStream will convert line separators in the
+     * file to the NETASCII format (i.e., you should not attempt to create a
+     * special OutputStream to do this). You must close the OutputStream when you
+     * finish writing to it. The OutputStream itself will take care of closing the
      * parent data connection socket upon being closed.
      * <p>
-     * <b>To finalize the file transfer you must call {@link #completePendingCommand completePendingCommand } and check its return value to verify success.</b>
+     * <b>To finalize the file transfer you must call {@link #completePendingCommand
+     * completePendingCommand } and check its return value to verify success.</b>
      * If this is not done, subsequent commands may behave unexpectedly.
      * </p>
      *
-     * @return An OutputStream through which the remote file can be written. If the data connection cannot be opened (e.g., the file does not exist), null is
-     *         returned (in which case you may check the reply code to determine the exact reason for failure).
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @return An OutputStream through which the remote file can be written. If the
+     *         data connection cannot be opened (e.g., the file does not exist),
+     *         null is
+     *         returned (in which case you may check the reply code to determine the
+     *         exact reason for failure).
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public OutputStream storeUniqueFileStream() throws IOException {
         return storeFileStream(FTPCmd.STOU, null);
     }
 
     /**
-     * Returns an OutputStream through which data can be written to store a file on the server using a unique name derived from the given name. If the current
-     * file type is ASCII, the returned OutputStream will convert line separators in the file to the NETASCII format (i.e., you should not attempt to create a
-     * special OutputStream to do this). You must close the OutputStream when you finish writing to it. The OutputStream itself will take care of closing the
+     * Returns an OutputStream through which data can be written to store a file on
+     * the server using a unique name derived from the given name. If the current
+     * file type is ASCII, the returned OutputStream will convert line separators in
+     * the file to the NETASCII format (i.e., you should not attempt to create a
+     * special OutputStream to do this). You must close the OutputStream when you
+     * finish writing to it. The OutputStream itself will take care of closing the
      * parent data connection socket upon being closed.
      * <p>
-     * <b>To finalize the file transfer you must call {@link #completePendingCommand completePendingCommand } and check its return value to verify success.</b>
+     * <b>To finalize the file transfer you must call {@link #completePendingCommand
+     * completePendingCommand } and check its return value to verify success.</b>
      * If this is not done, subsequent commands may behave unexpectedly.
      *
-     * @param remote The name on which to base the unique name given to the remote file.
-     * @return An OutputStream through which the remote file can be written. If the data connection cannot be opened (e.g., the file does not exist), null is
-     *         returned (in which case you may check the reply code to determine the exact reason for failure).
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @param remote The name on which to base the unique name given to the remote
+     *               file.
+     * @return An OutputStream through which the remote file can be written. If the
+     *         data connection cannot be opened (e.g., the file does not exist),
+     *         null is
+     *         returned (in which case you may check the reply code to determine the
+     *         exact reason for failure).
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public OutputStream storeUniqueFileStream(final String remote) throws IOException {
         return storeFileStream(FTPCmd.STOU, remote);
@@ -3392,10 +4935,16 @@ public class FTPClient extends FTP implements Configurable {
      *
      * @param pathname The pathname to mount.
      * @return True if successfully completed, false if not.
-     * @throws FTPConnectionClosedException If the FTP server prematurely closes the connection as a result of the client being idle or some other reason
-     *                                      causing the server to send FTP reply code 421. This exception may be caught either as an IOException or
+     * @throws FTPConnectionClosedException If the FTP server prematurely closes the
+     *                                      connection as a result of the client
+     *                                      being idle or some other reason
+     *                                      causing the server to send FTP reply
+     *                                      code 421. This exception may be caught
+     *                                      either as an IOException or
      *                                      independently as itself.
-     * @throws IOException                  If an I/O error occurs while either sending a command to the server or receiving a reply from the server.
+     * @throws IOException                  If an I/O error occurs while either
+     *                                      sending a command to the server or
+     *                                      receiving a reply from the server.
      */
     public boolean structureMount(final String pathname) throws IOException {
         return FTPReply.isPositiveCompletion(smnt(pathname));
@@ -3403,13 +4952,13 @@ public class FTPClient extends FTP implements Configurable {
 
     private Socket wrapOnDeflate(final Socket plainSocket) {
         switch (fileTransferMode) {
-        case DEFLATE_TRANSFER_MODE:
-            return new DeflateSocket(plainSocket);
-        // Experiment, not in an RFC?
-        // case GZIP_TRANSFER_MODE:
-            //return new GZIPSocket(plainSocket);
-        default:
-            return plainSocket;
+            case DEFLATE_TRANSFER_MODE:
+                return new DeflateSocket(plainSocket);
+            // Experiment, not in an RFC?
+            // case GZIP_TRANSFER_MODE:
+            // return new GZIPSocket(plainSocket);
+            default:
+                return plainSocket;
         }
     }
 }

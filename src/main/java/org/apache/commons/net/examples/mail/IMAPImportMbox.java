@@ -53,10 +53,7 @@ public final class IMAPImportMbox {
     private static final Pattern PATFROM = Pattern.compile(">+From "); // escaped From
 
     private static String getDate(final String msg) {
-        // From SENDER Fri Sep 13 17:04:01 2019
         final Pattern FROM_RE = Pattern.compile("From \\S+ +\\S+ (\\S+)  ?(\\S+) (\\S+) (\\S+)");
-        // [Fri] Sep 13 HMS 2019
-        // output date: 13-Sep-2019 17:04:01 +0000
         String date = null;
         final Matcher m = FROM_RE.matcher(msg);
         if (m.lookingAt()) {
@@ -65,13 +62,6 @@ public final class IMAPImportMbox {
         return date;
     }
 
-    /**
-     * Is at least one entry in the list contained in the string?
-     *
-     * @param contains the list of strings to look for
-     * @param string   the String to check against
-     * @return true if at least one entry in the contains list is contained in the string
-     */
     private static boolean listContains(final List<String> contains, final String string) {
         for (final String entry : contains) {
             if (string.contains(entry)) {
@@ -82,65 +72,83 @@ public final class IMAPImportMbox {
     }
 
     public static void main(final String[] args) throws IOException {
-        if (args.length < 2) {
-            System.err.println("Usage: IMAPImportMbox imap[s]://user:password@host[:port]/folder/path <mboxfile> [selectors]");
-            System.err
-                    .println("\tWhere: a selector is a list of numbers/number ranges - 1,2,3-10" + " - or a list of strings to match in the initial From line");
-            System.exit(1);
-        }
+        validateArguments(args);
 
         final URI uri = URI.create(args[0]);
         final String file = args[1];
+        final File mbox = validateMailboxFile(file);
+        final String folder = extractFolderPath(uri);
 
+        final List<String> contains = new ArrayList<>();
+        final BitSet msgNums = parseSelectors(args, contains);
+
+        final IMAPClient imap = IMAPUtils.imapLogin(uri, 10000, null);
+
+        processMboxFile(mbox, imap, folder, msgNums, contains);
+    }
+
+    private static void validateArguments(final String[] args) {
+        if (args.length < 2) {
+            System.err.println("Usage: IMAPImportMboximap[s]://user:password@host[:port]/folder/path <mboxfile> [selectors]");
+            System.err.println("\tWhere: a selector is a list of numbers/number ranges - 1,2,3-10" +
+            " - or a list of strings to match in the initial From line");
+            System.exit(1);
+        }
+    }
+
+    private static File validateMailboxFile(final String file) throws IOException {
         final File mbox = new File(file);
         if (!mbox.isFile() || !mbox.canRead()) {
             throw new IOException("Cannot read mailbox file: " + mbox);
         }
+        return mbox;
+    }
 
+    private static String extractFolderPath(final URI uri) {
         final String path = uri.getPath();
         if (path == null || path.length() < 1) {
             throw new IllegalArgumentException("Invalid folderPath: '" + path + "'");
         }
-        final String folder = path.substring(1); // skip the leading /
+        return path.substring(1); // Skip the leading /
+    }
 
-        final List<String> contains = new ArrayList<>(); // list of strings to find
-        final BitSet msgNums = new BitSet(); // list of message numbers
-
+    private static BitSet parseSelectors(final String[] args, List<String> contains) {
+        final BitSet msgNums = new BitSet();
         for (int i = 2; i < args.length; i++) {
             final String arg = args[i];
             if (arg.matches("\\d+(-\\d+)?(,\\d+(-\\d+)?)*")) { // number,m-n
                 for (final String entry : arg.split(",")) {
-                    final String[] parts = entry.split("-");
-                    if (parts.length == 2) { // m-n
-                        final int low = Integer.parseInt(parts[0]);
-                        final int high = Integer.parseInt(parts[1]);
-                        for (int j = low; j <= high; j++) {
-                            msgNums.set(j);
-                        }
-                    } else {
-                        msgNums.set(Integer.parseInt(entry));
-                    }
+                    parseRange(entry, msgNums);
                 }
             } else {
                 contains.add(arg); // not a number/number range
             }
         }
-//        System.out.println(msgNums.toString());
-//        System.out.println(java.util.Arrays.toString(contains.toArray()));
-
-        // Connect and login
-        final IMAPClient imap = IMAPUtils.imapLogin(uri, 10000, null);
-
+        return msgNums;
+    }
+    private static void parseRange(String entry, BitSet msgNums) {
+        final String[] parts = entry.split("-");
+        if (parts.length == 2) { // m-n
+            final int low = Integer.parseInt(parts[0]);
+            final int high = Integer.parseInt(parts[1]);
+            for (int j = low; j <= high; j++) {
+                msgNums.set(j);
+            }
+        } else {
+            msgNums.set(Integer.parseInt(entry));
+        }
+    }
+    private static void processMboxFile(File mbox, IMAPClient imap, String folder, BitSet msgNums, List<String> contains) throws IOException {
         int total = 0;
         int loaded = 0;
         try {
             imap.setSoTimeout(6000);
             boolean wanted = false; // Skip any leading rubbish
             final StringBuilder sb = new StringBuilder();
-            try (BufferedReader br = Files.newBufferedReader(Paths.get(file), Charset.defaultCharset())) {
+            try (BufferedReader br = Files.newBufferedReader(Paths.get(mbox.toURI()), Charset.defaultCharset())) {
                 String line;
                 while ((line = br.readLine()) != null) {
-                    if (line.startsWith("From ")) { // start of message; i.e. end of previous (if any)
+                    if (line.startsWith("From ")) { // start of message; end of previous (if any)
                         if (process(sb, imap, folder, total)) { // process previous message (if any)
                             loaded++;
                         }
@@ -150,7 +158,6 @@ public final class IMAPImportMbox {
                     } else if (startsWith(line, PATFROM)) { // Unescape ">+From " in body text
                         line = line.substring(1);
                     }
-                    // TODO process first Received: line to determine arrival date?
                     if (wanted) {
                         sb.append(line);
                         sb.append(CRLF);
@@ -164,7 +171,6 @@ public final class IMAPImportMbox {
             System.out.println("Error processing msg: " + total + " " + imap.getReplyString());
             e.printStackTrace();
             System.exit(10);
-            return;
         } finally {
             imap.logout();
             imap.disconnect();
@@ -191,19 +197,9 @@ public final class IMAPImportMbox {
         return m.lookingAt();
     }
 
-    /**
-     * Is the message wanted?
-     *
-     * @param msgNum   the message number
-     * @param line     the {@code From} line
-     * @param msgNums  the list of wanted message numbers
-     * @param contains the list of strings to be contained
-     * @return true if the message is wanted
-     */
     private static boolean wanted(final int msgNum, final String line, final BitSet msgNums, final List<String> contains) {
         return msgNums.isEmpty() && contains.isEmpty() // no selectors
                 || msgNums.get(msgNum) // matches message number
                 || listContains(contains, line); // contains string
     }
-
 }

@@ -24,12 +24,14 @@ import java.util.Collections;
 import org.apache.commons.net.util.NetConstants;
 
 /**
- * Basic state needed for message retrieval and threading. With thanks to Jamie Zawinski (jwz@jwz.org)
+ * Basic state needed for message retrieval and threading. With thanks to Jamie
+ * Zawinski (jwz@jwz.org)
  */
 public class Article implements Threadable<Article> {
 
     /**
-     * Recursive method that traverses a pre-threaded graph (or tree) of connected Article objects and prints them out.
+     * Recursive method that traverses a pre-threaded graph (or tree) of connected
+     * Article objects and prints them out.
      *
      * @param article the root of the article 'tree'
      * @since 3.4
@@ -39,7 +41,8 @@ public class Article implements Threadable<Article> {
     }
 
     /**
-     * Recursive method that traverses a pre-threaded graph (or tree) of connected Article objects and prints them out.
+     * Recursive method that traverses a pre-threaded graph (or tree) of connected
+     * Article objects and prints them out.
      *
      * @param article the root of the article 'tree'
      * @param depth   the current tree depth
@@ -49,7 +52,8 @@ public class Article implements Threadable<Article> {
     }
 
     /**
-     * Recursive method that traverses a pre-threaded graph (or tree) of connected Article objects and prints them out.
+     * Recursive method that traverses a pre-threaded graph (or tree) of connected
+     * Article objects and prints them out.
      *
      * @param article the root of the article 'tree'
      * @param depth   the current tree depth
@@ -70,7 +74,8 @@ public class Article implements Threadable<Article> {
     }
 
     /**
-     * Recursive method that traverses a pre-threaded graph (or tree) of connected Article objects and prints them out.
+     * Recursive method that traverses a pre-threaded graph (or tree) of connected
+     * Article objects and prints them out.
      *
      * @param article the root of the article 'tree'
      * @param ps      the PrintStream to use
@@ -118,7 +123,8 @@ public class Article implements Threadable<Article> {
     }
 
     /**
-     * Adds a message-id to the list of messages that this message references (i.e. replies to)
+     * Adds a message-id to the list of messages that this message references (i.e.
+     * replies to)
      *
      * @param msgId the message id to add
      */
@@ -251,7 +257,7 @@ public class Article implements Threadable<Article> {
     /**
      * Sets the article number.
      *
-     * @param articleNumber  the article number.
+     * @param articleNumber the article number.
      */
     @Deprecated
     public void setArticleNumber(final int articleNumber) {
@@ -261,7 +267,7 @@ public class Article implements Threadable<Article> {
     /**
      * Sets the article number.
      *
-     * @param articleNumber  the article number.
+     * @param articleNumber the article number.
      */
     public void setArticleNumber(final long articleNumber) {
         this.articleNumber = articleNumber;
@@ -276,7 +282,7 @@ public class Article implements Threadable<Article> {
     /**
      * Sets the article date header.
      *
-     * @param date  the article date header.
+     * @param date the article date header.
      */
     public void setDate(final String date) {
         this.date = date;
@@ -285,7 +291,7 @@ public class Article implements Threadable<Article> {
     /**
      * Sets the article from header.
      *
-     * @param from  the article from header.
+     * @param from the article from header.
      */
     public void setFrom(final String from) {
         this.from = from;
@@ -300,7 +306,7 @@ public class Article implements Threadable<Article> {
     /**
      * Sets the article subject.
      *
-     * @param subject  the article subject.
+     * @param subject the article subject.
      */
     public void setSubject(final String subject) {
         this.subject = subject;
@@ -315,7 +321,8 @@ public class Article implements Threadable<Article> {
     }
 
     /**
-     * Attempts to parse the subject line for some typical reply signatures, and strip them out
+     * Attempts to parse the subject line for some typical reply signatures, and
+     * strip them out
      */
     private void simplifySubject() {
         int start = 0;
@@ -327,43 +334,50 @@ public class Article implements Threadable<Article> {
         while (!done) {
             done = true;
 
-            // skip whitespace
-            // "Re: " breaks this
+            // Skip whitespace
             while (start < len && subject.charAt(start) == ' ') {
                 start++;
             }
 
-            if (start < len - 2 && (subject.charAt(start) == 'r' || subject.charAt(start) == 'R')
-                    && (subject.charAt(start + 1) == 'e' || subject.charAt(start + 1) == 'E')) {
+            // Simplify "Re: " and variations
+            if (start < len - 2 && (subject.charAt(start) == 'r' || subject.charAt(start) == 'R') &&
+                    (subject.charAt(start + 1) == 'e' || subject.charAt(start + 1) == 'E')) {
 
-                if (subject.charAt(start + 2) == ':') {
-                    start += 3; // Skip "Re:"
-                    done = false;
-                } else if (start < len - 2 && (subject.charAt(start + 2) == '[' || subject.charAt(start + 2) == '(')) {
-
-                    int i = start + 3;
-
-                    while (i < len && subject.charAt(i) >= '0' && subject.charAt(i) <= '9') {
-                        i++;
-                    }
-
-                    if (i < len - 1 && (subject.charAt(i) == ']' || subject.charAt(i) == ')') && subject.charAt(i + 1) == ':') {
-                        start = i + 2;
+                switch (subject.charAt(start + 2)) {
+                    case ':':
+                        start += 3; // Skip "Re:"
                         done = false;
-                    }
+                        break;
+                    case '[':
+                    case '(':
+                        int i = start + 3;
+
+                        // Skip numeric characters
+                        while (i < len && Character.isDigit(subject.charAt(i))) {
+                            i++;
+                        }
+
+                        if (i < len - 1 && (subject.charAt(i) == ']' || subject.charAt(i) == ')')
+                                && subject.charAt(i + 1) == ':') {
+                            start = i + 2;
+                            done = false;
+                        }
+                        break;
                 }
             }
 
+            // Handle (no subject)
             if ("(no subject)".equals(simplifiedSubject)) {
                 simplifiedSubject = "";
             }
 
+            // Trim trailing whitespace
             int end = len;
-
             while (end > start && subject.charAt(end - 1) < ' ') {
                 end--;
             }
 
+            // Set simplified subject
             if (start == 0 && end == len) {
                 simplifiedSubject = subject;
             } else {
@@ -381,5 +395,4 @@ public class Article implements Threadable<Article> {
     public String toString() { // Useful for Eclipse debugging
         return articleNumber + " " + articleId + " " + subject;
     }
-
 }

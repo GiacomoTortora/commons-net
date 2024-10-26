@@ -32,26 +32,34 @@ import org.apache.commons.net.io.CRLFLineReader;
 import org.apache.commons.net.util.NetConstants;
 
 /**
- * The IMAP class provides the basic the functionality necessary to implement your own IMAP client.
+ * The IMAP class provides the basic the functionality necessary to implement
+ * your own IMAP client.
  */
 public class IMAP extends SocketClient {
     private static final String CONN_CLOSED_WITHOUT_IND = "Connection closed without indication.";
+
     /**
-     * Implement this interface and register it via {@link #setChunkListener(IMAPChunkListener)} in order to get access to multi-line partial command responses.
+     * Implement this interface and register it via
+     * {@link #setChunkListener(IMAPChunkListener)} in order to get access to
+     * multi-line partial command responses.
      * Useful when processing large FETCH responses.
      */
     public interface IMAPChunkListener {
         /**
          * Called when a multi-line partial response has been received.
          *
-         * @param imap the instance, get the response by calling {@link #getReplyString()} or {@link #getReplyStrings()}
+         * @param imap the instance, get the response by calling
+         *             {@link #getReplyString()} or {@link #getReplyStrings()}
          * @return {@code true} if the reply buffer is to be cleared on return
          */
         boolean chunkReceived(IMAP imap);
     }
 
     public enum IMAPState {
-        /** A constant representing the state where the client is not yet connected to a server. */
+        /**
+         * A constant representing the state where the client is not yet connected to a
+         * server.
+         */
         DISCONNECTED_STATE,
         /** A constant representing the "not authenticated" state. */
         NOT_AUTH_STATE,
@@ -72,15 +80,20 @@ public class IMAP extends SocketClient {
 
     /**
      * <p>
-     * Implements {@link IMAPChunkListener} to returns {@code true} but otherwise does nothing.
+     * Implements {@link IMAPChunkListener} to returns {@code true} but otherwise
+     * does nothing.
      * </p>
      * <p>
-     * This is intended for use with a suitable ProtocolCommandListener. If the IMAP response contains multiple-line data, the protocol listener will be called
-     * for each multi-line chunk. The accumulated reply data will be cleared after calling the listener. If the response is very long, this can significantly
-     * reduce memory requirements. The listener will also start receiving response data earlier, as it does not have to wait for the entire response to be read.
+     * This is intended for use with a suitable ProtocolCommandListener. If the IMAP
+     * response contains multiple-line data, the protocol listener will be called
+     * for each multi-line chunk. The accumulated reply data will be cleared after
+     * calling the listener. If the response is very long, this can significantly
+     * reduce memory requirements. The listener will also start receiving response
+     * data earlier, as it does not have to wait for the entire response to be read.
      * </p>
      * <p>
-     * The ProtocolCommandListener must be prepared to accept partial responses. This should not be a problem for listeners that just log the input.
+     * The ProtocolCommandListener must be prepared to accept partial responses.
+     * This should not be a problem for listeners that just log the input.
      * </p>
      *
      * @see #setChunkListener(IMAPChunkListener)
@@ -89,8 +102,11 @@ public class IMAP extends SocketClient {
     public static final IMAPChunkListener TRUE_CHUNK_LISTENER = imap -> true;
 
     /**
-     * Quote an input string if necessary. If the string is enclosed in double-quotes it is assumed to be quoted already and is returned unchanged. If it is the
-     * empty string, "" is returned. If it contains a space then it is enclosed in double quotes, escaping the characters backslash and double-quote.
+     * Quote an input string if necessary. If the string is enclosed in
+     * double-quotes it is assumed to be quoted already and is returned unchanged.
+     * If it is the
+     * empty string, "" is returned. If it contains a space then it is enclosed in
+     * double quotes, escaping the characters backslash and double-quote.
      *
      * @param input the value to be quoted, may be null
      * @return the quoted value
@@ -127,7 +143,8 @@ public class IMAP extends SocketClient {
     private final char[] initialID = { 'A', 'A', 'A', 'A' };
 
     /**
-     * The default IMAPClient constructor. Initializes the state to {@code DISCONNECTED_STATE}.
+     * The default IMAPClient constructor. Initializes the state to
+     * {@code DISCONNECTED_STATE}.
      */
     public IMAP() {
         setDefaultPort(DEFAULT_PORT);
@@ -139,7 +156,8 @@ public class IMAP extends SocketClient {
     }
 
     /**
-     * Performs connection initialization and sets state to {@link IMAPState#NOT_AUTH_STATE}.
+     * Performs connection initialization and sets state to
+     * {@link IMAPState#NOT_AUTH_STATE}.
      */
     @Override
     protected void _connectAction_() throws IOException {
@@ -158,8 +176,11 @@ public class IMAP extends SocketClient {
     }
 
     /**
-     * Disconnects the client from the server, and sets the state to {@code DISCONNECTED_STATE}. The reply text information from the last issued command
-     * is voided to allow garbage collection of the memory used to store that information.
+     * Disconnects the client from the server, and sets the state to
+     * {@code DISCONNECTED_STATE}. The reply text information from the last issued
+     * command
+     * is voided to allow garbage collection of the memory used to store that
+     * information.
      *
      * @throws IOException If there is an error in disconnecting.
      */
@@ -196,7 +217,8 @@ public class IMAP extends SocketClient {
     }
 
     /**
-     * Overrides {@link SocketClient#fireReplyReceived(int, String)} to avoid creating the reply string if there are no listeners to invoke.
+     * Overrides {@link SocketClient#fireReplyReceived(int, String)} to avoid
+     * creating the reply string if there are no listeners to invoke.
      *
      * @param replyCode passed to the listeners
      * @param ignored   the string is only created if there are listeners defined.
@@ -247,44 +269,12 @@ public class IMAP extends SocketClient {
      */
     private void getReply(final boolean wantTag) throws IOException {
         replyLines.clear();
-        String line = _reader.readLine();
-
-        if (line == null) {
-            throw new EOFException(CONN_CLOSED_WITHOUT_IND);
-        }
+        String line = readLineOrThrow();
 
         replyLines.add(line);
 
         if (wantTag) {
-            while (IMAPReply.isUntagged(line)) {
-                int literalCount = IMAPReply.literalCount(line);
-                final boolean isMultiLine = literalCount >= 0;
-                while (literalCount >= 0) {
-                    line = _reader.readLine();
-                    if (line == null) {
-                        throw new EOFException(CONN_CLOSED_WITHOUT_IND);
-                    }
-                    replyLines.add(line);
-                    literalCount -= line.length() + 2; // Allow for CRLF
-                }
-                if (isMultiLine) {
-                    final IMAPChunkListener il = chunkListener;
-                    if (il != null) {
-                        final boolean clear = il.chunkReceived(this);
-                        if (clear) {
-                            fireReplyReceived(IMAPReply.PARTIAL, getReplyString());
-                            replyLines.clear();
-                        }
-                    }
-                }
-                line = _reader.readLine(); // get next chunk or final tag
-                if (line == null) {
-                    throw new EOFException(CONN_CLOSED_WITHOUT_IND);
-                }
-                replyLines.add(line);
-            }
-            // check the response code on the last line
-            replyCode = IMAPReply.getReplyCode(line);
+            processTaggedReply(line);
         } else {
             replyCode = IMAPReply.getUntaggedReplyCode(line);
         }
@@ -292,8 +282,54 @@ public class IMAP extends SocketClient {
         fireReplyReceived(replyCode, getReplyString());
     }
 
+    private void processTaggedReply(String line) throws IOException {
+        while (IMAPReply.isUntagged(line)) {
+            int literalCount = IMAPReply.literalCount(line);
+            boolean isMultiLine = literalCount >= 0;
+
+            processLiteralLines(literalCount);
+
+            if (isMultiLine) {
+                notifyChunkListener();
+            }
+
+            line = readLineOrThrow(); // get next chunk or final tag
+            replyLines.add(line);
+        }
+        // Check the response code on the last line
+        replyCode = IMAPReply.getReplyCode(line);
+    }
+
+    private void processLiteralLines(int literalCount) throws IOException {
+        while (literalCount >= 0) {
+            String line = readLineOrThrow();
+            replyLines.add(line);
+            literalCount -= line.length() + 2; // Allow for CRLF
+        }
+    }
+
+    private void notifyChunkListener() {
+        IMAPChunkListener il = chunkListener;
+        if (il != null) {
+            boolean clear = il.chunkReceived(this);
+            if (clear) {
+                fireReplyReceived(IMAPReply.PARTIAL, getReplyString());
+                replyLines.clear();
+            }
+        }
+    }
+
+    private String readLineOrThrow() throws IOException {
+        String line = _reader.readLine();
+        if (line == null) {
+            throw new EOFException(CONN_CLOSED_WITHOUT_IND);
+        }
+        return line;
+    }
+
     /**
-     * Returns the reply to the last command sent to the server. The value is a single string containing all the reply lines including newlines.
+     * Returns the reply to the last command sent to the server. The value is a
+     * single string containing all the reply lines including newlines.
      *
      * @return The last server response.
      */
@@ -308,7 +344,8 @@ public class IMAP extends SocketClient {
     }
 
     /**
-     * Returns an array of lines received as a reply to the last command sent to the server. The lines have end of lines truncated.
+     * Returns an array of lines received as a reply to the last command sent to the
+     * server. The lines have end of lines truncated.
      *
      * @return The last server response.
      */
@@ -377,7 +414,8 @@ public class IMAP extends SocketClient {
      * @param commandID The ID (tag) of the command.
      * @param command   The IMAP command to send.
      * @param args      The command arguments.
-     * @return The server reply code (either {@link IMAPReply#OK}, {@link IMAPReply#NO} or {@link IMAPReply#BAD}).
+     * @return The server reply code (either {@link IMAPReply#OK},
+     *         {@link IMAPReply#NO} or {@link IMAPReply#BAD}).
      */
     private int sendCommandWithID(final String commandID, final String command, final String args) throws IOException {
         final StringBuilder __commandBuffer = new StringBuilder();
@@ -415,9 +453,12 @@ public class IMAP extends SocketClient {
     }
 
     /**
-     * Sets the current chunk listener. If a listener is registered and the implementation returns true, then any registered
-     * {@link org.apache.commons.net.PrintCommandListener PrintCommandListener} instances will be invoked with the partial response and a status of
-     * {@link IMAPReply#PARTIAL} to indicate that the final reply code is not yet known.
+     * Sets the current chunk listener. If a listener is registered and the
+     * implementation returns true, then any registered
+     * {@link org.apache.commons.net.PrintCommandListener PrintCommandListener}
+     * instances will be invoked with the partial response and a status of
+     * {@link IMAPReply#PARTIAL} to indicate that the final reply code is not yet
+     * known.
      *
      * @param listener the class to use, or {@code null} to disable
      * @see #TRUE_CHUNK_LISTENER
@@ -436,4 +477,3 @@ public class IMAP extends SocketClient {
         this.state = state;
     }
 }
-

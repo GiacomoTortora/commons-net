@@ -31,7 +31,8 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPFileEntryParserImpl;
 
 /**
- * Parses {@code MSLT} and {@code MLSD} replies. See <a href="https://datatracker.ietf.org/doc/html/rfc3659">RFC 3659</a>.
+ * Parses {@code MSLT} and {@code MLSD} replies. See
+ * <a href="https://datatracker.ietf.org/doc/html/rfc3659">RFC 3659</a>.
  * <p>
  * The format is as follows:
  * </p>
@@ -52,8 +53,11 @@ import org.apache.commons.net.ftp.FTPFileEntryParserImpl;
  * UNIX.group=0;UNIX.mode=0755;UNIX.owner=0;
  * </pre>
  * <p>
- * A single control response entry (MLST) is returned with a leading space; multiple (data) entries are returned without any leading spaces. The parser requires
- * that the leading space from the MLST entry is removed. MLSD entries can begin with a single space if there are no facts.
+ * A single control response entry (MLST) is returned with a leading space;
+ * multiple (data) entries are returned without any leading spaces. The parser
+ * requires
+ * that the leading space from the MLST entry is removed. MLSD entries can begin
+ * with a single space if there are no facts.
  * </p>
  *
  * @since 3.0
@@ -76,7 +80,8 @@ public class MLSxEntryParser extends FTPFileEntryParserImpl {
     private static final int[][] UNIX_PERMS = { // perm bits, broken down by octal int value
             /* 0 */ {}, /* 1 */ { FTPFile.EXECUTE_PERMISSION }, /* 2 */ { FTPFile.WRITE_PERMISSION },
             /* 3 */ { FTPFile.EXECUTE_PERMISSION, FTPFile.WRITE_PERMISSION }, /* 4 */ { FTPFile.READ_PERMISSION },
-            /* 5 */ { FTPFile.READ_PERMISSION, FTPFile.EXECUTE_PERMISSION }, /* 6 */ { FTPFile.READ_PERMISSION, FTPFile.WRITE_PERMISSION },
+            /* 5 */ { FTPFile.READ_PERMISSION, FTPFile.EXECUTE_PERMISSION },
+            /* 6 */ { FTPFile.READ_PERMISSION, FTPFile.WRITE_PERMISSION },
             /* 7 */ { FTPFile.READ_PERMISSION, FTPFile.WRITE_PERMISSION, FTPFile.EXECUTE_PERMISSION }, };
 
     public static MLSxEntryParser getInstance() {
@@ -133,7 +138,8 @@ public class MLSxEntryParser extends FTPFileEntryParserImpl {
     }
 
     /**
-     * Creates the parser for MSLT and MSLD listing entries This class is immutable, so one can use {@link #getInstance()} instead.
+     * Creates the parser for MSLT and MSLD listing entries This class is immutable,
+     * so one can use {@link #getInstance()} instead.
      *
      * @deprecated Use {@link #getInstance()}.
      */
@@ -149,138 +155,193 @@ public class MLSxEntryParser extends FTPFileEntryParserImpl {
         for (final char c : valueLowerCase.toCharArray()) {
             // TODO these are mostly just guesses at present
             switch (c) {
-            case 'a': // (file) may APPEnd
-                file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
-                break;
-            case 'c': // (dir) files may be created in the dir
-                file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
-                break;
-            case 'd': // deletable
-                file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
-                break;
-            case 'e': // (dir) can change to this dir
-                file.setPermission(FTPFile.USER_ACCESS, FTPFile.READ_PERMISSION, true);
-                break;
-            case 'f': // (file) renamable
-                // ?? file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
-                break;
-            case 'l': // (dir) can be listed
-                file.setPermission(FTPFile.USER_ACCESS, FTPFile.EXECUTE_PERMISSION, true);
-                break;
-            case 'm': // (dir) can create directory here
-                file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
-                break;
-            case 'p': // (dir) entries may be deleted
-                file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
-                break;
-            case 'r': // (files) file may be RETRieved
-                file.setPermission(FTPFile.USER_ACCESS, FTPFile.READ_PERMISSION, true);
-                break;
-            case 'w': // (files) file may be STORed
-                file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
-                break;
-            default:
-                break;
-            // ignore unexpected flag for now.
+                case 'a': // (file) may APPEnd
+                    file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
+                    break;
+                case 'c': // (dir) files may be created in the dir
+                    file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
+                    break;
+                case 'd': // deletable
+                    file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
+                    break;
+                case 'e': // (dir) can change to this dir
+                    file.setPermission(FTPFile.USER_ACCESS, FTPFile.READ_PERMISSION, true);
+                    break;
+                case 'f': // (file) renamable
+                    // ?? file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
+                    break;
+                case 'l': // (dir) can be listed
+                    file.setPermission(FTPFile.USER_ACCESS, FTPFile.EXECUTE_PERMISSION, true);
+                    break;
+                case 'm': // (dir) can create directory here
+                    file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
+                    break;
+                case 'p': // (dir) entries may be deleted
+                    file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
+                    break;
+                case 'r': // (files) file may be RETRieved
+                    file.setPermission(FTPFile.USER_ACCESS, FTPFile.READ_PERMISSION, true);
+                    break;
+                case 'w': // (files) file may be STORed
+                    file.setPermission(FTPFile.USER_ACCESS, FTPFile.WRITE_PERMISSION, true);
+                    break;
+                default:
+                    break;
+                // ignore unexpected flag for now.
             } // switch
         } // each char
     }
 
     @Override
     public FTPFile parseFTPEntry(final String entry) {
-        if (entry.startsWith(" ")) { // leading space means no facts are present
-            if (entry.length() > 1) { // is there a path name?
-                final FTPFile file = new FTPFile();
-                file.setRawListing(entry);
-                file.setName(entry.substring(1));
-                return file;
-            }
-            return null; // Invalid - no pathname
+        // Controlla se l'entry inizia con uno spazio
+        if (entry.startsWith(" ")) {
+            return handleLeadingSpaceEntry(entry);
+        }
 
-        }
-        final String[] parts = entry.split(" ", 2); // Path may contain space
+        // Splitta l'entry in fatti e nome del file
+        String[] parts = entry.split(" ", 2);
         if (parts.length != 2 || parts[1].isEmpty()) {
-            return null; // no space found or no file name
+            return null; // Invalid - no file name
         }
-        final String factList = parts[0];
+
+        // Crea un nuovo FTPFile
+        FTPFile file = createFTPFile(entry, parts[1]);
+        String factList = parts[0];
+
+        // Verifica se il factList termina con un punto e virgola
         if (!factList.endsWith(";")) {
-            return null;
+            return null; // Deve terminare con un punto e virgola
         }
-        final FTPFile file = new FTPFile();
+
+        // Processa i fatti
+        return processFacts(factList, file) ? file : null; // Ritorna null se ci sono errori nel parsing
+    }
+
+    // Gestisce le voci che iniziano con uno spazio
+    private FTPFile handleLeadingSpaceEntry(String entry) {
+        if (entry.length() > 1) {
+            FTPFile file = new FTPFile();
+            file.setRawListing(entry);
+            file.setName(entry.substring(1));
+            return file;
+        }
+        return null; // Invalid - no pathname
+    }
+
+    // Crea un FTPFile a partire dall'entry
+    private FTPFile createFTPFile(String entry, String name) {
+        FTPFile file = new FTPFile();
         file.setRawListing(entry);
-        file.setName(parts[1]);
-        final String[] facts = factList.split(";");
-        final boolean hasUnixMode = parts[0].toLowerCase(Locale.ENGLISH).contains("unix.mode=");
-        for (final String fact : facts) {
-            final String[] factparts = fact.split("=", -1); // Don't drop empty values
-// Sample missing permission
-// drwx------   2 mirror   mirror       4096 Mar 13  2010 subversion
-// modify=20100313224553;perm=;type=dir;unique=811U282598;UNIX.group=500;UNIX.mode=0700;UNIX.owner=500; subversion
-            if (factparts.length != 2) {
-                return null; // invalid - there was no "=" sign
-            }
-            final String factname = factparts[0].toLowerCase(Locale.ENGLISH);
-            final String factvalue = factparts[1];
-            if (factvalue.isEmpty()) {
-                continue; // nothing to see here
-            }
-            final String valueLowerCase = factvalue.toLowerCase(Locale.ENGLISH);
-            switch (factname) {
-            case "size":
-            case "sizd":
-                file.setSize(Long.parseLong(factvalue));
-                break;
-            case "modify": {
-                final Calendar parsed = parseGMTdateTime(factvalue);
-                if (parsed == null) {
-                    return null;
-                }
-                file.setTimestamp(parsed);
-                break;
-            }
-            case "type": {
-                final Integer intType = TYPE_TO_INT.get(valueLowerCase);
-                if (intType == null) {
-                    file.setType(FTPFile.UNKNOWN_TYPE);
-                } else {
-                    file.setType(intType.intValue());
-                }
-                break;
-            }
-            default:
-                if (factname.startsWith("unix.")) {
-                    final String unixfact = factname.substring("unix.".length()).toLowerCase(Locale.ENGLISH);
-                    switch (unixfact) {
-                    case "group":
-                        file.setGroup(factvalue);
-                        break;
-                    case "owner":
-                        file.setUser(factvalue);
-                        break;
-                    case "mode": {
-                        final int off = factvalue.length() - 3; // only parse last 3 digits
-                        for (int i = 0; i < 3; i++) {
-                            final int ch = factvalue.charAt(off + i) - '0';
-                            if (ch >= 0 && ch <= 7) { // Check it's valid octal
-                                for (final int p : UNIX_PERMS[ch]) {
-                                    file.setPermission(UNIX_GROUPS[i], p, true);
-                                }
-                            } else {
-                                // TODO should this cause failure, or can it be reported somehow?
-                            }
-                        } // digits
-                        break;
-                    }
-                    default:
-                        break;
-                    } // mode
-                } // unix.
-                else if (!hasUnixMode && "perm".equals(factname)) { // skip if we have the UNIX.mode
-                    doUnixPerms(file, valueLowerCase);
-                }
-                break;
-            } // process "perm"
-        } // each fact
+        file.setName(name);
         return file;
+    }
+
+    // Processa i fatti presenti nell'entry
+    private boolean processFacts(String factList, FTPFile file) {
+        String[] facts = factList.split(";");
+        boolean hasUnixMode = factList.toLowerCase(Locale.ENGLISH).contains("unix.mode=");
+
+        for (String fact : facts) {
+            String[] factParts = fact.split("=", -1);
+            if (factParts.length != 2) {
+                return false; // Invalid - there was no "=" sign
+            }
+
+            String factName = factParts[0].toLowerCase(Locale.ENGLISH);
+            String factValue = factParts[1];
+
+            if (factValue.isEmpty()) {
+                continue; // nothing to process here
+            }
+
+            // Processa il fatto specifico
+            if (!processFact(factName, factValue, file, hasUnixMode)) {
+                return false; // Ritorna false in caso di errore
+            }
+        }
+        return true; // Tutti i fatti elaborati con successo
+    }
+
+    // Processa un singolo fatto
+    private boolean processFact(String factName, String factValue, FTPFile file, boolean hasUnixMode) {
+        switch (factName) {
+            case "size":
+                return handleSizeFact(factValue, file);
+            case "modify":
+                return handleModifyFact(factValue, file);
+            case "type":
+                return handleTypeFact(factValue, file);
+            default:
+                return handleUnixOrPermFact(factName, factValue, file, hasUnixMode);
+        }
+    }
+
+    // Gestisce il fatto "size"
+    private boolean handleSizeFact(String factValue, FTPFile file) {
+        try {
+            file.setSize(Long.parseLong(factValue));
+            return true; // Successo
+        } catch (NumberFormatException e) {
+            return false; // Errore nel formato
+        }
+    }
+
+    // Gestisce il fatto "modify"
+    private boolean handleModifyFact(String factValue, FTPFile file) {
+        Calendar parsed = parseGMTdateTime(factValue);
+        if (parsed == null) {
+            return false; // Errore nella data di modifica
+        }
+        file.setTimestamp(parsed);
+        return true; // Successo
+    }
+
+    // Gestisce il fatto "type"
+    private boolean handleTypeFact(String factValue, FTPFile file) {
+        Integer intType = TYPE_TO_INT.get(factValue.toLowerCase(Locale.ENGLISH));
+        file.setType(intType != null ? intType : FTPFile.UNKNOWN_TYPE);
+        return true; // Successo
+    }
+
+    // Gestisce i fatti Unix o "perm"
+    private boolean handleUnixOrPermFact(String factName, String factValue, FTPFile file, boolean hasUnixMode) {
+        if (factName.startsWith("unix.")) {
+            return handleUnixFact(factName, factValue, file);
+        } else if (!hasUnixMode && "perm".equals(factName)) {
+            doUnixPerms(file, factValue.toLowerCase(Locale.ENGLISH));
+        }
+        return true; // Non un caso di errore
+    }
+
+    // Gestisce i fatti Unix
+    private boolean handleUnixFact(String factName, String factValue, FTPFile file) {
+        String unixFact = factName.substring("unix.".length()).toLowerCase(Locale.ENGLISH);
+        switch (unixFact) {
+            case "group":
+                file.setGroup(factValue);
+                return true;
+            case "owner":
+                file.setUser(factValue);
+                return true;
+            case "mode":
+                handleUnixMode(factValue, file);
+                return true;
+            default:
+                return true; // Caso valido non gestito
+        }
+    }
+
+    // Gestisce i permessi Unix
+    private void handleUnixMode(String factValue, FTPFile file) {
+        int off = factValue.length() - 3; // Solo i 3 ultimi caratteri
+        for (int i = 0; i < 3; i++) {
+            int ch = factValue.charAt(off + i) - '0';
+            if (ch >= 0 && ch <= 7) { // Verifica che sia ottale valido
+                for (int p : UNIX_PERMS[ch]) {
+                    file.setPermission(UNIX_GROUPS[i], p, true);
+                }
+            }
+        }
     }
 }

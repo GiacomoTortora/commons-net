@@ -30,7 +30,8 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
     private static final int WOULD_BLOCK = -2;
 
     // TODO should these be private enums?
-    static final int STATE_DATA = 0, STATE_IAC = 1, STATE_WILL = 2, STATE_WONT = 3, STATE_DO = 4, STATE_DONT = 5, STATE_SB = 6, STATE_SE = 7, STATE_CR = 8,
+    static final int STATE_DATA = 0, STATE_IAC = 1, STATE_WILL = 2, STATE_WONT = 3, STATE_DO = 4, STATE_DONT = 5,
+            STATE_SB = 6, STATE_SE = 7, STATE_CR = 8,
             STATE_IAC_SB = 9;
 
     private boolean hasReachedEOF; // @GuardedBy("queue")
@@ -127,10 +128,12 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
         synchronized (queue) {
             bufferWasEmpty = bytesAvailable == 0;
             while (bytesAvailable >= queue.length - 1) {
-                // The queue is full. We need to wait before adding any more data to it. Hopefully the stream owner
+                // The queue is full. We need to wait before adding any more data to it.
+                // Hopefully the stream owner
                 // will consume some data soon!
                 if (!threaded) {
-                    // We've been asked to add another character to the queue, but it is already full and there's
+                    // We've been asked to add another character to the queue, but it is already
+                    // full and there's
                     // no other thread to drain it. This should not have happened!
                     throw new IllegalStateException("Queue is full! Cannot process another character.");
                 }
@@ -166,91 +169,88 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
 
             while (true) {
                 if (ioException != null) {
-                    final IOException e;
-                    e = ioException;
+                    final IOException e = ioException;
                     ioException = null;
                     throw e;
                 }
 
-                if (bytesAvailable == 0) {
-                    // Return EOF if at end of file
-                    if (hasReachedEOF) {
-                        return EOF;
-                    }
-
-                    // Otherwise, we have to wait for queue to get something
-                    if (threaded) {
-                        queue.notify();
-                        try {
-                            readIsWaiting = true;
-                            queue.wait();
-                            readIsWaiting = false;
-                        } catch (final InterruptedException e) {
-                            throw new InterruptedIOException("Fatal thread interruption during read.");
+                // Check the status of bytesAvailable
+                switch (bytesAvailable) {
+                    case 0:
+                        // Return EOF if at end of file
+                        if (hasReachedEOF) {
+                            return EOF;
                         }
-                    } else {
-                        // alreadyread = false;
-                        readIsWaiting = true;
-                        int ch;
-                        boolean mayBlock = true; // block on the first read only
 
-                        do {
+                        // Otherwise, we have to wait for queue to get something
+                        if (threaded) {
+                            queue.notify();
                             try {
-                                if ((ch = read(mayBlock)) < 0 && ch != WOULD_BLOCK) {
-                                    // must be EOF
-                                    return ch;
-                                }
-                            } catch (final InterruptedIOException e) {
-                                synchronized (queue) {
-                                    ioException = e;
-                                    queue.notifyAll();
-                                    try {
-                                        queue.wait(100);
-                                    } catch (final InterruptedException interrupted) {
-                                        // Ignored
-                                    }
-                                }
-                                return EOF;
-                            }
-
-                            try {
-                                if (ch != WOULD_BLOCK) {
-                                    processChar(ch);
-                                }
+                                readIsWaiting = true;
+                                queue.wait();
+                                readIsWaiting = false;
                             } catch (final InterruptedException e) {
-                                if (isClosed) {
+                                throw new InterruptedIOException("Fatal thread interruption during read.");
+                            }
+                        } else {
+                            readIsWaiting = true;
+                            int ch;
+                            boolean mayBlock = true; // block on the first read only
+
+                            do {
+                                try {
+                                    if ((ch = read(mayBlock)) < 0 && ch != WOULD_BLOCK) {
+                                        // must be EOF
+                                        return ch;
+                                    }
+                                } catch (final InterruptedIOException e) {
+                                    synchronized (queue) {
+                                        ioException = e;
+                                        queue.notifyAll();
+                                        try {
+                                            queue.wait(100);
+                                        } catch (final InterruptedException interrupted) {
+                                            // Ignored
+                                        }
+                                    }
                                     return EOF;
                                 }
-                            }
 
-                            // Reads should not block on subsequent iterations. Potentially, this could happen if the
-                            // remaining buffered socket data consists entirely of Telnet command sequence and no "user" data.
-                            mayBlock = false;
+                                try {
+                                    if (ch != WOULD_BLOCK) {
+                                        processChar(ch);
+                                    }
+                                } catch (final InterruptedException e) {
+                                    if (isClosed) {
+                                        return EOF;
+                                    }
+                                }
 
+                                // Reads should not block on subsequent iterations.
+                                mayBlock = false;
+
+                            } while (super.available() > 0 && bytesAvailable < queue.length - 1);
+
+                            readIsWaiting = false;
                         }
-                        // Continue reading as long as there is data available and the queue is not full.
-                        while (super.available() > 0 && bytesAvailable < queue.length - 1);
+                        continue;
 
-                        readIsWaiting = false;
-                    }
-                    continue;
+                    default:
+                        final int ch = queue[queueHead];
+
+                        if (++queueHead >= queue.length) {
+                            queueHead = 0;
+                        }
+
+                        --bytesAvailable;
+
+                        // Need to explicitly notify() so available() works properly
+                        if (bytesAvailable == 0 && threaded) {
+                            queue.notify();
+                        }
+
+                        return ch; // NOPMD TODO?
                 }
-                final int ch;
-
-                ch = queue[queueHead];
-
-                if (++queueHead >= queue.length) {
-                    queueHead = 0;
-                }
-
-                --bytesAvailable;
-
-                // Need to explicitly notify() so available() works properly
-                if (bytesAvailable == 0 && threaded) {
-                    queue.notify();
-                }
-
-                return ch; // NOPMD TODO?
             }
         }
     }
@@ -260,16 +260,17 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
     // as a processDo/Will/etc. command invoked from TelnetInputStream
     // tries to write.
     /**
-     * Gets the next byte of data. IAC commands are processed internally and do not return data.
+     * Gets the next byte of data. IAC commands are processed internally and do not
+     * return data.
      *
      * @param mayBlock true if method is allowed to block
-     * @return the next byte of data, or -1 (EOF) if end of stread reached, or -2 (WOULD_BLOCK) if mayBlock is false and there is no data available
+     * @return the next byte of data, or -1 (EOF) if end of stread reached, or -2
+     *         (WOULD_BLOCK) if mayBlock is false and there is no data available
      */
     private int read(final boolean mayBlock) throws IOException {
         int ch;
 
         while (true) {
-
             // If there is no more data AND we were told not to block,
             // just return WOULD_BLOCK (-2). (More efficient than exception.)
             if (!mayBlock && super.available() == 0) {
@@ -294,134 +295,131 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
             /* Code Section added for supporting spystreams (end) */
 
             switch (receiveState) {
-
-            case STATE_CR:
-                if (ch == '\0') {
-                    // Strip null
-                    continue;
-                }
-                // How do we handle newline after cr?
-                // else if (ch == '\n' && _requestedDont(TelnetOption.ECHO) &&
-
-                // Handle as normal data by falling through to _STATE_DATA case
-
-                //$FALL-THROUGH$
-            case STATE_DATA:
-                if (ch == TelnetCommand.IAC) {
-                    receiveState = STATE_IAC;
-                    continue;
-                }
-
-                if (ch == '\r') {
-                    synchronized (client) {
-                        if (client.requestedDont(TelnetOption.BINARY)) {
-                            receiveState = STATE_CR;
-                        } else {
-                            receiveState = STATE_DATA;
-                        }
+                case STATE_CR:
+                    if (ch == '\0') {
+                        // Strip null
+                        continue;
                     }
-                } else {
-                    receiveState = STATE_DATA;
-                }
-                break;
-
-            case STATE_IAC:
-                switch (ch) {
-                case TelnetCommand.WILL:
-                    receiveState = STATE_WILL;
-                    continue;
-                case TelnetCommand.WONT:
-                    receiveState = STATE_WONT;
-                    continue;
-                case TelnetCommand.DO:
-                    receiveState = STATE_DO;
-                    continue;
-                case TelnetCommand.DONT:
-                    receiveState = STATE_DONT;
-                    continue;
-                /* TERMINAL-TYPE option (start) */
-                case TelnetCommand.SB:
-                    suboptionCount = 0;
-                    receiveState = STATE_SB;
-                    continue;
-                /* TERMINAL-TYPE option (end) */
-                case TelnetCommand.IAC:
-                    receiveState = STATE_DATA;
-                    break; // exit to enclosing switch to return IAC from read
-                case TelnetCommand.SE: // unexpected byte! ignore it (don't send it as a command)
-                    receiveState = STATE_DATA;
-                    continue;
-                default:
-                    receiveState = STATE_DATA;
-                    client.processCommand(ch); // Notify the user
-                    continue; // move on the next char
-                }
-                break; // exit and return from read
-            case STATE_WILL:
-                synchronized (client) {
-                    client.processWill(ch);
-                    client.flushOutputStream();
-                }
-                receiveState = STATE_DATA;
-                continue;
-            case STATE_WONT:
-                synchronized (client) {
-                    client.processWont(ch);
-                    client.flushOutputStream();
-                }
-                receiveState = STATE_DATA;
-                continue;
-            case STATE_DO:
-                synchronized (client) {
-                    client.processDo(ch);
-                    client.flushOutputStream();
-                }
-                receiveState = STATE_DATA;
-                continue;
-            case STATE_DONT:
-                synchronized (client) {
-                    client.processDont(ch);
-                    client.flushOutputStream();
-                }
-                receiveState = STATE_DATA;
-                continue;
-            /* TERMINAL-TYPE option (start) */
-            case STATE_SB:
-                switch (ch) {
-                case TelnetCommand.IAC:
-                    receiveState = STATE_IAC_SB;
-                    continue;
-                default:
-                    // store suboption char
-                    if (suboptionCount < suboption.length) {
-                        suboption[suboptionCount++] = ch;
+                    // How do we handle newline after cr?
+                    // else if (ch == '\n' && _requestedDont(TelnetOption.ECHO) &&
+                    // Handle as normal data by falling through to _STATE_DATA case
+                    // $FALL-THROUGH$
+                case STATE_DATA:
+                    switch (ch) {
+                        case TelnetCommand.IAC:
+                            receiveState = STATE_IAC;
+                            continue;
+                        case '\r':
+                            synchronized (client) {
+                                receiveState = client.requestedDont(TelnetOption.BINARY) ? STATE_CR : STATE_DATA;
+                            }
+                            continue;
+                        default:
+                            receiveState = STATE_DATA;
+                            break;
                     }
                     break;
-                }
-                receiveState = STATE_SB;
-                continue;
-            case STATE_IAC_SB: // IAC received during SB phase
-                switch (ch) {
-                case TelnetCommand.SE:
+
+                case STATE_IAC:
+                    switch (ch) {
+                        case TelnetCommand.WILL:
+                            receiveState = STATE_WILL;
+                            continue;
+                        case TelnetCommand.WONT:
+                            receiveState = STATE_WONT;
+                            continue;
+                        case TelnetCommand.DO:
+                            receiveState = STATE_DO;
+                            continue;
+                        case TelnetCommand.DONT:
+                            receiveState = STATE_DONT;
+                            continue;
+                        /* TERMINAL-TYPE option (start) */
+                        case TelnetCommand.SB:
+                            suboptionCount = 0;
+                            receiveState = STATE_SB;
+                            continue;
+                        /* TERMINAL-TYPE option (end) */
+                        case TelnetCommand.IAC:
+                            receiveState = STATE_DATA;
+                            break; // exit to enclosing switch to return IAC from read
+                        case TelnetCommand.SE: // unexpected byte! ignore it (don't send it as a command)
+                            receiveState = STATE_DATA;
+                            continue;
+                        default:
+                            receiveState = STATE_DATA;
+                            client.processCommand(ch); // Notify the user
+                            continue; // move on the next char
+                    }
+                    break; // exit and return from read
+
+                case STATE_WILL:
                     synchronized (client) {
-                        client.processSuboption(suboption, suboptionCount);
+                        client.processWill(ch);
                         client.flushOutputStream();
                     }
                     receiveState = STATE_DATA;
                     continue;
-                case TelnetCommand.IAC: // De-dup the duplicated IAC
-                    if (suboptionCount < suboption.length) {
-                        suboption[suboptionCount++] = ch;
+
+                case STATE_WONT:
+                    synchronized (client) {
+                        client.processWont(ch);
+                        client.flushOutputStream();
                     }
+                    receiveState = STATE_DATA;
+                    continue;
+
+                case STATE_DO:
+                    synchronized (client) {
+                        client.processDo(ch);
+                        client.flushOutputStream();
+                    }
+                    receiveState = STATE_DATA;
+                    continue;
+
+                case STATE_DONT:
+                    synchronized (client) {
+                        client.processDont(ch);
+                        client.flushOutputStream();
+                    }
+                    receiveState = STATE_DATA;
+                    continue;
+
+                /* TERMINAL-TYPE option (start) */
+                case STATE_SB:
+                    if (ch == TelnetCommand.IAC) {
+                        receiveState = STATE_IAC_SB;
+                    } else {
+                        // store suboption char
+                        if (suboptionCount < suboption.length) {
+                            suboption[suboptionCount++] = ch;
+                        }
+                    }
+                    continue;
+
+                case STATE_IAC_SB: // IAC received during SB phase
+                    switch (ch) {
+                        case TelnetCommand.SE:
+                            synchronized (client) {
+                                client.processSuboption(suboption, suboptionCount);
+                                client.flushOutputStream();
+                            }
+                            receiveState = STATE_DATA;
+                            continue;
+                        case TelnetCommand.IAC: // De-dup the duplicated IAC
+                            if (suboptionCount < suboption.length) {
+                                suboption[suboptionCount++] = ch;
+                            }
+                            break;
+                        default: // unexpected byte! ignore it
+                            break;
+                    }
+                    receiveState = STATE_SB;
+                    continue;
+                /* TERMINAL-TYPE option (end) */
+
+                default:
                     break;
-                default: // unexpected byte! ignore it
-                    break;
-                }
-                receiveState = STATE_SB;
-                continue;
-            /* TERMINAL-TYPE option (end) */
-            default:
-                break;
             }
 
             break; // NOPMD TODO?
@@ -431,10 +429,12 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
     }
 
     /**
-     * Reads the next number of bytes from the stream into an array and returns the number of bytes read. Returns -1 if the end of the stream has been reached.
+     * Reads the next number of bytes from the stream into an array and returns the
+     * number of bytes read. Returns -1 if the end of the stream has been reached.
      *
      * @param buffer The byte array in which to store the data.
-     * @return The number of bytes read. Returns -1 if the end of the message has been reached.
+     * @return The number of bytes read. Returns -1 if the end of the message has
+     *         been reached.
      * @throws IOException If an error occurs in reading the underlying stream.
      */
     @Override
@@ -443,13 +443,16 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
     }
 
     /**
-     * Reads the next number of bytes from the stream into an array and returns the number of bytes read. Returns -1 if the end of the message has been reached.
-     * The characters are stored in the array starting from the given offset and up to the length specified.
+     * Reads the next number of bytes from the stream into an array and returns the
+     * number of bytes read. Returns -1 if the end of the message has been reached.
+     * The characters are stored in the array starting from the given offset and up
+     * to the length specified.
      *
      * @param buffer The byte array in which to store the data.
      * @param offset The offset into the array at which to start storing data.
      * @param length The number of bytes to read.
-     * @return The number of bytes read. Returns -1 if the end of the stream has been reached.
+     * @return The number of bytes read. Returns -1 if the end of the stream has
+     *         been reached.
      * @throws IOException If an error occurs while reading the underlying stream.
      */
     @Override
@@ -493,26 +496,11 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
                         break;
                     }
                 } catch (final InterruptedIOException e) {
-                    synchronized (queue) {
-                        ioException = e;
-                        queue.notifyAll();
-                        try {
-                            queue.wait(100);
-                        } catch (final InterruptedException interrupted) {
-                            if (isClosed) {
-                                break _outerLoop;
-                            }
-                        }
-                        continue;
-                    }
+                    handleInterruptedIOException(e);
+                    continue; // Continue to the next iteration after handling the exception
                 } catch (final RuntimeException re) {
-                    // We treat any runtime exceptions as though the
-                    // stream has been closed. We close the
-                    // underlying stream just to be sure.
-                    super.close();
-                    // Breaking the loop has the effect of setting
-                    // the state to closed at the end of the method.
-                    break _outerLoop;
+                    handleRuntimeException();
+                    break _outerLoop; // Exit the outer loop on RuntimeException
                 }
 
                 // Process new character
@@ -521,7 +509,7 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
                     notify = processChar(ch);
                 } catch (final InterruptedException e) {
                     if (isClosed) {
-                        break _outerLoop;
+                        break _outerLoop; // Exit if closed
                     }
                 }
 
@@ -531,19 +519,51 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
                 }
             }
         } catch (final IOException ioe) {
-            synchronized (queue) {
-                ioException = ioe;
-            }
-            client.notifyInputListener();
+            handleIOException(ioe);
         }
 
+        cleanupAndNotify();
+        threaded = false; // Clean up thread state
+    }
+
+    private void handleInterruptedIOException(InterruptedIOException e) {
+        synchronized (queue) {
+            ioException = e;
+            queue.notifyAll();
+            try {
+                queue.wait(100);
+            } catch (final InterruptedException interrupted) {
+                if (isClosed) {
+                    throw new RuntimeException("Stream closed during wait", interrupted); // Handle stream closed
+                                                                                          // scenario
+                }
+            }
+        }
+    }
+
+    private void handleRuntimeException() {
+        try {
+            // Treat any runtime exceptions as though the stream has been closed.
+            super.close(); // Close the underlying stream
+        } catch (IOException e) {
+            // Handle IOException from super.close() if needed
+            e.printStackTrace(); // Log or handle as appropriate
+        }
+    }
+
+    private void handleIOException(IOException ioe) {
+        synchronized (queue) {
+            ioException = ioe; // Store IO exception
+        }
+        client.notifyInputListener(); // Notify input listener on IO exception
+    }
+
+    private void cleanupAndNotify() {
         synchronized (queue) {
             isClosed = true; // Possibly redundant
             hasReachedEOF = true;
-            queue.notify();
+            queue.notify(); // Notify any waiting threads
         }
-
-        threaded = false;
     }
 
     void start() {

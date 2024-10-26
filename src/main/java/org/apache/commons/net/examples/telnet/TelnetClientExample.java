@@ -34,11 +34,16 @@ import org.apache.commons.net.telnet.TelnetNotificationHandler;
 import org.apache.commons.net.telnet.TerminalTypeOptionHandler;
 
 /**
- * This is a simple example of use of TelnetClient. An external option handler (SimpleTelnetOptionHandler) is used. Initial configuration requested by
- * TelnetClient will be: WILL ECHO, WILL SUPPRESS-GA, DO SUPPRESS-GA. VT100 terminal type will be subnegotiated.
+ * This is a simple example of use of TelnetClient. An external option handler
+ * (SimpleTelnetOptionHandler) is used. Initial configuration requested by
+ * TelnetClient will be: WILL ECHO, WILL SUPPRESS-GA, DO SUPPRESS-GA. VT100
+ * terminal type will be subnegotiated.
  * <p>
- * Also, use of the sendAYT(), getLocalOptionState(), getRemoteOptionState() is demonstrated. When connected, type AYT to send an AYT command to the server and
- * see the result. Type OPT to see a report of the state of the first 25 options.
+ * Also, use of the sendAYT(), getLocalOptionState(), getRemoteOptionState() is
+ * demonstrated. When connected, type AYT to send an AYT command to the server
+ * and
+ * see the result. Type OPT to see a report of the state of the first 25
+ * options.
  */
 public class TelnetClientExample implements Runnable, TelnetNotificationHandler {
     private static TelnetClient tc;
@@ -63,6 +68,7 @@ public class TelnetClientExample implements Runnable, TelnetNotificationHandler 
             System.err.println("Exception while opening the spy file: " + e.getMessage());
         }
     }
+
     private void setupTelnetClient(String remoteip, int remoteport, FileOutputStream fout) {
         try {
             connectToServer(remoteip, remoteport);
@@ -73,14 +79,16 @@ public class TelnetClientExample implements Runnable, TelnetNotificationHandler 
             System.exit(1);
         }
     }
-    private void connectToServer(String remoteip, int remoteport) throws IOException {
+
+    private static void connectToServer(String remoteip, int remoteport) throws IOException {
         tc = new TelnetClient();
         registerOptionHandlers();
         tc.connect(remoteip, remoteport);
         System.out.println("TelnetClientExample");
         printInstructions();
     }
-    private void registerOptionHandlers() {
+
+    private static void registerOptionHandlers() {
         try {
             tc.addOptionHandler(new TerminalTypeOptionHandler("VT100", false, false, true, false));
             tc.addOptionHandler(new EchoOptionHandler(true, false, true, false));
@@ -91,7 +99,8 @@ public class TelnetClientExample implements Runnable, TelnetNotificationHandler 
             System.err.println("IO error: " + i.getMessage());
         }
     }
-    private void printInstructions() {
+
+    private static void printInstructions() {
         System.out.println("Type AYT to send an AYT Telnet command");
         System.out.println("Type OPT to print a report of status of options (0-24)");
         System.out.println("Type REGISTER to register a new SimpleOptionHandler");
@@ -100,11 +109,13 @@ public class TelnetClientExample implements Runnable, TelnetNotificationHandler 
         System.out.println("Type UNSPY to stop spying the connection");
         System.out.println("Type ^[A-Z] to send the control character; use ^^ to send ^");
     }
+
     private void startReaderThread() {
         final Thread reader = new Thread(this);
         tc.registerNotifHandler(this);
         reader.start();
     }
+
     private void handleUserInput(FileOutputStream fout) {
         try {
             final OutputStream outstr = tc.getOutputStream();
@@ -118,6 +129,7 @@ public class TelnetClientExample implements Runnable, TelnetNotificationHandler 
             System.err.println("Exception while reading keyboard:" + e.getMessage());
         }
     }
+
     private void processInputLine(byte[] buff, int readCount, OutputStream outstr, FileOutputStream fout) {
         final Charset charset = Charset.defaultCharset();
         final String line = new String(buff, 0, readCount, charset); // deliberate use of default charset
@@ -144,6 +156,7 @@ public class TelnetClientExample implements Runnable, TelnetNotificationHandler 
             System.err.println("Interrupt exception: " + i.getMessage());
         }
     }
+
     private void printOptionStatus() {
         System.out.println("Status of options:");
         for (int ii = 0; ii < 25; ii++) {
@@ -161,12 +174,14 @@ public class TelnetClientExample implements Runnable, TelnetNotificationHandler 
             final boolean initremote = Boolean.parseBoolean(st.nextToken());
             final boolean acceptlocal = Boolean.parseBoolean(st.nextToken());
             final boolean acceptremote = Boolean.parseBoolean(st.nextToken());
-            final SimpleOptionHandler opthand = new SimpleOptionHandler(opcode, initlocal, initremote, acceptlocal, acceptremote);
+            final SimpleOptionHandler opthand = new SimpleOptionHandler(opcode, initlocal, initremote, acceptlocal,
+                    acceptremote);
             tc.addOptionHandler(opthand);
         } catch (InvalidTelnetOptionException e) {
             System.err.println("Error registering option: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("Invalid REGISTER command. Use REGISTER optcode initlocal initremote acceptlocal acceptremote");
+            System.err.println(
+                    "Invalid REGISTER command. Use REGISTER optcode initlocal initremote acceptlocal acceptremote");
         }
     }
 
@@ -191,6 +206,7 @@ public class TelnetClientExample implements Runnable, TelnetNotificationHandler 
         }
         outstr.flush();
     }
+
     @Override
     public void run() {
         final InputStream instr = tc.getInputStream();

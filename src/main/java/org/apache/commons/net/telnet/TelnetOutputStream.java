@@ -26,14 +26,17 @@ import java.io.OutputStream;
  * In binary mode, the only conversion is to double IAC.
  * </p>
  * <p>
- * In ASCII mode, if convertCRtoCRLF is true (currently always true), any CR is converted to CRLF. IACs are doubled. Also, a bare LF is converted to CRLF and a
+ * In ASCII mode, if convertCRtoCRLF is true (currently always true), any CR is
+ * converted to CRLF. IACs are doubled. Also, a bare LF is converted to CRLF and
+ * a
  * bare CR is converted to CR\0
  * </p>
  */
 final class TelnetOutputStream extends OutputStream {
     private static final boolean CONVERT_TO_CRLF = true;
     private final TelnetClient client;
-    // TODO there does not appear to be any way to change this value - should it be a ctor parameter?
+    // TODO there does not appear to be any way to change this value - should it be
+    // a ctor parameter?
     private boolean lastWasCR;
 
     TelnetOutputStream(final TelnetClient client) {
@@ -56,7 +59,8 @@ final class TelnetOutputStream extends OutputStream {
      * Writes a byte array to the stream.
      *
      * @param buffer The byte array to write.
-     * @throws IOException If an error occurs while writing to the underlying stream.
+     * @throws IOException If an error occurs while writing to the underlying
+     *                     stream.
      */
     @Override
     public void write(final byte buffer[]) throws IOException {
@@ -64,12 +68,14 @@ final class TelnetOutputStream extends OutputStream {
     }
 
     /**
-     * Writes a number of bytes from a byte array to the stream starting from a given offset.
+     * Writes a number of bytes from a byte array to the stream starting from a
+     * given offset.
      *
      * @param buffer The byte array to write.
      * @param offset The offset into the array at which to start copying data.
      * @param length The number of bytes to write.
-     * @throws IOException If an error occurs while writing to the underlying stream.
+     * @throws IOException If an error occurs while writing to the underlying
+     *                     stream.
      */
     @Override
     public void write(final byte buffer[], int offset, int length) throws IOException {
@@ -84,59 +90,65 @@ final class TelnetOutputStream extends OutputStream {
      * Writes a byte to the stream.
      *
      * @param ch The byte to write.
-     * @throws IOException If an error occurs while writing to the underlying stream.
+     * @throws IOException If an error occurs while writing to the underlying
+     *                     stream.
      */
     @Override
     public void write(int ch) throws IOException {
-
         synchronized (client) {
             ch &= 0xff;
 
-            if (client.requestedWont(TelnetOption.BINARY)) // i.e. ASCII
-            {
+            if (client.requestedWont(TelnetOption.BINARY)) { // i.e. ASCII
                 if (lastWasCR) {
-                    if (CONVERT_TO_CRLF) {
-                        client.sendByte('\n');
-                        if (ch == '\n') // i.e. was CRLF anyway
-                        {
-                            lastWasCR = false;
-                            return;
-                        }
-                    } // __convertCRtoCRLF
-                    else if (ch != '\n') {
-                        client.sendByte('\0'); // RFC854 requires CR NUL for bare CR
-                    }
+                    handleLastWasCR(ch);
                 }
 
                 switch (ch) {
-                case '\r':
-                    client.sendByte('\r');
-                    lastWasCR = true;
-                    break;
-                case '\n':
-                    if (!lastWasCR) { // convert LF to CRLF
+                    case '\r':
                         client.sendByte('\r');
-                    }
-                    client.sendByte(ch);
-                    lastWasCR = false;
-                    break;
-                case TelnetCommand.IAC:
-                    client.sendByte(TelnetCommand.IAC);
-                    client.sendByte(TelnetCommand.IAC);
-                    lastWasCR = false;
-                    break;
-                default:
-                    client.sendByte(ch);
-                    lastWasCR = false;
-                    break;
+                        lastWasCR = true;
+                        break;
+                    case '\n':
+                        if (!lastWasCR) { // convert LF to CRLF
+                            client.sendByte('\r');
+                        }
+                        client.sendByte(ch);
+                        lastWasCR = false;
+                        break;
+                    case TelnetCommand.IAC:
+                        client.sendByte(TelnetCommand.IAC);
+                        client.sendByte(TelnetCommand.IAC);
+                        lastWasCR = false;
+                        break;
+                    default:
+                        client.sendByte(ch);
+                        lastWasCR = false;
+                        break;
                 }
-            } // end ASCII
-            else if (ch == TelnetCommand.IAC) {
-                client.sendByte(ch);
-                client.sendByte(TelnetCommand.IAC);
-            } else {
-                client.sendByte(ch);
+            } else { // Handling for non-ASCII
+                handleNonAscii(ch);
             }
         }
     }
+
+    private void handleLastWasCR(int ch) throws IOException {
+        if (CONVERT_TO_CRLF) {
+            client.sendByte('\n');
+            if (ch == '\n') { // i.e. was CRLF anyway
+                lastWasCR = false;
+            }
+        } else if (ch != '\n') {
+            client.sendByte('\0'); // RFC854 requires CR NUL for bare CR
+        }
+    }
+
+    private void handleNonAscii(int ch) throws IOException {
+        if (ch == TelnetCommand.IAC) {
+            client.sendByte(ch);
+            client.sendByte(TelnetCommand.IAC);
+        } else {
+            client.sendByte(ch);
+        }
+    }
+
 }

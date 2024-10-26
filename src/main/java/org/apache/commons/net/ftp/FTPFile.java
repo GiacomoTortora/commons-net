@@ -27,7 +27,8 @@ import java.util.Formatter;
 import java.util.TimeZone;
 
 /**
- * The FTPFile class is used to represent information about files stored on an FTP server.
+ * The FTPFile class is used to represent information about files stored on an
+ * FTP server.
  *
  * @see FTPFileEntryParser
  * @see FTPClient#listFiles
@@ -63,7 +64,10 @@ public class FTPFile implements Serializable {
     /** A constant indicating file/directory write permission. */
     public static final int WRITE_PERMISSION = 1;
 
-    /** A constant indicating file execute permission or directory listing permission. */
+    /**
+     * A constant indicating file execute permission or directory listing
+     * permission.
+     */
     public static final int EXECUTE_PERMISSION = 2;
 
     private int type = UNKNOWN_TYPE;
@@ -91,7 +95,8 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Constructor for use by {@link FTPListParseEngine} only. Used to create FTPFile entries for failed parses
+     * Constructor for use by {@link FTPListParseEngine} only. Used to create
+     * FTPFile entries for failed parses
      *
      * @param rawListing line that could not be parsed.
      * @since 3.4
@@ -103,19 +108,20 @@ public class FTPFile implements Serializable {
 
     private char formatType() {
         switch (type) {
-        case FILE_TYPE:
-            return '-';
-        case DIRECTORY_TYPE:
-            return 'd';
-        case SYMBOLIC_LINK_TYPE:
-            return 'l';
-        default:
-            return '?';
+            case FILE_TYPE:
+                return '-';
+            case DIRECTORY_TYPE:
+                return 'd';
+            case SYMBOLIC_LINK_TYPE:
+                return 'l';
+            default:
+                return '?';
         }
     }
 
     /**
-     * Gets the name of the group owning the file. Sometimes this will be a string representation of the group number.
+     * Gets the name of the group owning the file. Sometimes this will be a string
+     * representation of the group number.
      *
      * @return The name of the group owning the file.
      */
@@ -124,7 +130,8 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Gets the number of hard links to this file. This is not to be confused with symbolic links.
+     * Gets the number of hard links to this file. This is not to be confused with
+     * symbolic links.
      *
      * @return The number of hard links to this file.
      */
@@ -133,10 +140,12 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * If the FTPFile is a symbolic link, this method returns the name of the file being pointed to by the symbolic link.
+     * If the FTPFile is a symbolic link, this method returns the name of the file
+     * being pointed to by the symbolic link.
      * Otherwise, it returns {@code null}.
      *
-     * @return The file pointed to by the symbolic link ({@code null} if the FTPFile is not a symbolic link).
+     * @return The file pointed to by the symbolic link ({@code null} if the FTPFile
+     *         is not a symbolic link).
      */
     public String getLink() {
         return link;
@@ -189,7 +198,8 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Gets the type of the file (one of the {@code _TYPE} constants), e.g., if it is a directory, a regular file, or a symbolic link.
+     * Gets the type of the file (one of the {@code _TYPE} constants), e.g., if it
+     * is a directory, a regular file, or a symbolic link.
      *
      * @return The type of the file.
      */
@@ -198,7 +208,8 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Gets the name of the user owning the file. Sometimes this will be a string representation of the user number.
+     * Gets the name of the user owning the file. Sometimes this will be a string
+     * representation of the user number.
      *
      * @return The name of the user owning the file.
      */
@@ -207,13 +218,17 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Tests if the given access group (one of the {@code _ACCESS} constants) has the given access permission (one of the {@code _PERMISSION}
+     * Tests if the given access group (one of the {@code _ACCESS} constants) has
+     * the given access permission (one of the {@code _PERMISSION}
      * constants) to the file.
      *
      * @param access     The access group (one of the {@code _ACCESS} constants)
-     * @param permission The access permission (one of the {@code _PERMISSION} constants)
-     * @throws ArrayIndexOutOfBoundsException if either of the parameters is out of range
-     * @return {@code true} if {@link #isValid()} is {@code true} and the associated permission is set; {@code false} otherwise.
+     * @param permission The access permission (one of the {@code _PERMISSION}
+     *                   constants)
+     * @throws ArrayIndexOutOfBoundsException if either of the parameters is out of
+     *                                        range
+     * @return {@code true} if {@link #isValid()} is {@code true} and the associated
+     *         permission is set; {@code false} otherwise.
      */
     public boolean hasPermission(final int access, final int permission) {
         if (permissions == null) {
@@ -225,7 +240,8 @@ public class FTPFile implements Serializable {
     /**
      * Tests if the file is a directory.
      *
-     * @return {@code true} if the file is of type {@code DIRECTORY_TYPE}, {@code false} if not.
+     * @return {@code true} if the file is of type {@code DIRECTORY_TYPE},
+     *         {@code false} if not.
      */
     public boolean isDirectory() {
         return type == DIRECTORY_TYPE;
@@ -234,7 +250,8 @@ public class FTPFile implements Serializable {
     /**
      * Tests if the file is a regular file.
      *
-     * @return {@code true} if the file is of type {@code FILE_TYPE}, {@code false} if not.
+     * @return {@code true} if the file is of type {@code FILE_TYPE}, {@code false}
+     *         if not.
      */
     public boolean isFile() {
         return type == FILE_TYPE;
@@ -243,7 +260,8 @@ public class FTPFile implements Serializable {
     /**
      * Tests if the file is a symbolic link.
      *
-     * @return {@code true} if the file is of type {@code SYMBOLIC_LINK_TYPE}, {@code false} if not.
+     * @return {@code true} if the file is of type {@code SYMBOLIC_LINK_TYPE},
+     *         {@code false} if not.
      */
     public boolean isSymbolicLink() {
         return type == SYMBOLIC_LINK_TYPE;
@@ -252,16 +270,19 @@ public class FTPFile implements Serializable {
     /**
      * Tests if the type of the file is unknown.
      *
-     * @return {@code true} if the file is of type {@code UNKNOWN_TYPE}, {@code false} if not.
+     * @return {@code true} if the file is of type {@code UNKNOWN_TYPE},
+     *         {@code false} if not.
      */
     public boolean isUnknown() {
         return type == UNKNOWN_TYPE;
     }
 
     /**
-     * Tests whether an entry is valid or not. If the entry is invalid, only the {@link #getRawListing()} method will be useful. Other methods may fail.
+     * Tests whether an entry is valid or not. If the entry is invalid, only the
+     * {@link #getRawListing()} method will be useful. Other methods may fail.
      *
-     * Used in conjunction with list parsing that preserves entries that failed to parse.
+     * Used in conjunction with list parsing that preserves entries that failed to
+     * parse.
      *
      * @see FTPClientConfig#setUnparseableEntries(boolean)
      * @return {@code true} if the entry is valid; {@code false} otherwise
@@ -296,7 +317,8 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Sets the name of the group owning the file. This may be a string representation of the group number.
+     * Sets the name of the group owning the file. This may be a string
+     * representation of the group number.
      *
      * @param group The name of the group owning the file.
      */
@@ -305,7 +327,8 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Sets the number of hard links to this file. This is not to be confused with symbolic links.
+     * Sets the number of hard links to this file. This is not to be confused with
+     * symbolic links.
      *
      * @param hardLinkCount The number of hard links to this file.
      */
@@ -314,7 +337,8 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * If the FTPFile is a symbolic link, use this method to set the name of the file being pointed to by the symbolic link.
+     * If the FTPFile is a symbolic link, use this method to set the name of the
+     * file being pointed to by the symbolic link.
      *
      * @param link The file pointed to by the symbolic link.
      */
@@ -332,13 +356,17 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Sets if the given access group (one of the {@code _ACCESS} constants) has the given access permission (one of the {@code _PERMISSION}
+     * Sets if the given access group (one of the {@code _ACCESS} constants) has the
+     * given access permission (one of the {@code _PERMISSION}
      * constants) to the file.
      *
      * @param access     The access group (one of the {@code _ACCESS} constants)
-     * @param permission The access permission (one of the {@code _PERMISSION} constants)
-     * @param value      {@code true} if permission is allowed, {@code false} if not.
-     * @throws ArrayIndexOutOfBoundsException if either of the parameters is out of range
+     * @param permission The access permission (one of the {@code _PERMISSION}
+     *                   constants)
+     * @param value      {@code true} if permission is allowed, {@code false} if
+     *                   not.
+     * @throws ArrayIndexOutOfBoundsException if either of the parameters is out of
+     *                                        range
      */
     public void setPermission(final int access, final int permission, final boolean value) {
         // TODO: only allow permission setting if file is valid
@@ -364,7 +392,8 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Sets the file timestamp. This usually the last modification time. The parameter is not cloned, so do not alter its value after calling this method.
+     * Sets the file timestamp. This usually the last modification time. The
+     * parameter is not cloned, so do not alter its value after calling this method.
      *
      * @param calendar A Calendar instance representing the file timestamp.
      */
@@ -382,7 +411,8 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Sets the name of the user owning the file. This may be a string representation of the user number;
+     * Sets the name of the user owning the file. This may be a string
+     * representation of the user number;
      *
      * @param user The name of the user owning the file.
      */
@@ -391,10 +421,14 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Gets a string representation of the FTPFile information. This currently mimics the UNIX listing format. This method uses the time zone of the Calendar
-     * entry, which is the server time zone (if one was provided) otherwise it is the local time zone.
+     * Gets a string representation of the FTPFile information. This currently
+     * mimics the UNIX listing format. This method uses the time zone of the
+     * Calendar
+     * entry, which is the server time zone (if one was provided) otherwise it is
+     * the local time zone.
      * <p>
-     * Note: if the instance is not valid {@link #isValid()}, no useful information can be returned. In this case, use {@link #getRawListing()} instead.
+     * Note: if the instance is not valid {@link #isValid()}, no useful information
+     * can be returned. In this case, use {@link #getRawListing()} instead.
      * </p>
      *
      * @return A string representation of the FTPFile information.
@@ -405,13 +439,18 @@ public class FTPFile implements Serializable {
     }
 
     /**
-     * Gets a string representation of the FTPFile information. This currently mimics the UNIX listing format. This method allows the Calendar time zone to be
+     * Gets a string representation of the FTPFile information. This currently
+     * mimics the UNIX listing format. This method allows the Calendar time zone to
+     * be
      * overridden.
      * <p>
-     * Note: if the instance is not valid {@link #isValid()}, no useful information can be returned. In this case, use {@link #getRawListing()} instead.
+     * Note: if the instance is not valid {@link #isValid()}, no useful information
+     * can be returned. In this case, use {@link #getRawListing()} instead.
      * </p>
      *
-     * @param timezone the time zone to use for displaying the time stamp If {@code null}, then use the Calendar ({@link #getTimestamp()}) entry
+     * @param timezone the time zone to use for displaying the time stamp If
+     *                 {@code null}, then use the Calendar ({@link #getTimestamp()})
+     *                 entry
      * @return A string representation of the FTPFile information.
      * @since 3.4
      */
@@ -442,19 +481,29 @@ public class FTPFile implements Serializable {
                 }
                 fmt.format(" %1$tY-%1$tm-%1$td", timestamp);
                 // Only display time units if they are present
-                if (timestamp.isSet(Calendar.HOUR_OF_DAY)) {
-                    fmt.format(" %1$tH", timestamp);
-                    if (timestamp.isSet(Calendar.MINUTE)) {
-                        fmt.format(":%1$tM", timestamp);
+                switch (Calendar.HOUR_OF_DAY) {
+                    case Calendar.HOUR_OF_DAY:
+                        if (timestamp.isSet(Calendar.HOUR_OF_DAY)) {
+                            fmt.format(" %1$tH", timestamp);
+                        }
+                        // Nessun break intenzionale per continuare al prossimo case.
+                    case Calendar.MINUTE:
+                        if (timestamp.isSet(Calendar.MINUTE)) {
+                            fmt.format(":%1$tM", timestamp);
+                        }
+                    case Calendar.SECOND:
                         if (timestamp.isSet(Calendar.SECOND)) {
                             fmt.format(":%1$tS", timestamp);
-                            if (timestamp.isSet(Calendar.MILLISECOND)) {
-                                fmt.format(".%1$tL", timestamp);
-                            }
                         }
-                    }
-                    fmt.format(" %1$tZ", timestamp);
+                    case Calendar.MILLISECOND:
+                        if (timestamp.isSet(Calendar.MILLISECOND)) {
+                            fmt.format(".%1$tL", timestamp);
+                        }
+                        break;
+                    default:
+                        break;
                 }
+                fmt.format(" %1$tZ", timestamp);
             }
             sb.append(' ');
             sb.append(getName());
@@ -463,7 +512,8 @@ public class FTPFile implements Serializable {
     }
 
     /*
-     * Serialization is unnecessary for this class. Reject attempts to do so until such time as the Serializable attribute can be dropped.
+     * Serialization is unnecessary for this class. Reject attempts to do so until
+     * such time as the Serializable attribute can be dropped.
      */
 
     /**

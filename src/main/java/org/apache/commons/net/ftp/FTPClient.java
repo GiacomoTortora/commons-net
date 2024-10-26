@@ -1004,7 +1004,7 @@ public class FTPClient extends FTP implements Configurable {
      * @throws IOException on error
      * @since 3.1
      */
-    protected boolean _retrieveFile(final String command, final String remote, final OutputStream local)
+    protected boolean retrieveFile(final String command, final String remote, final OutputStream local)
             throws IOException {
         final Socket socket = _openDataConnection_(command, remote);
         if (socket == null) {
@@ -1077,7 +1077,7 @@ public class FTPClient extends FTP implements Configurable {
      * @return true if successful
      * @throws IOException on error
      */
-    protected boolean _storeFile(final String command, final String remote, final InputStream local)
+    protected boolean storeFile(final String command, final String remote, final InputStream local)
             throws IOException {
         final Socket socket = _openDataConnection_(command, remote);
         if (socket == null) {
@@ -4083,7 +4083,7 @@ public class FTPClient extends FTP implements Configurable {
      *                                                       server.
      */
     public boolean retrieveFile(final String remote, final OutputStream local) throws IOException {
-        return _retrieveFile(FTPCmd.RETR.getCommand(), remote, local);
+        return retrieveFile(FTPCmd.RETR.getCommand(), remote, local);
     }
 
     /**
@@ -4674,7 +4674,7 @@ public class FTPClient extends FTP implements Configurable {
     }
 
     private boolean storeFile(final FTPCmd command, final String remote, final InputStream local) throws IOException {
-        return _storeFile(command.getCommand(), remote, local);
+        return storeFile(command.getCommand(), remote, local);
     }
 
     /**

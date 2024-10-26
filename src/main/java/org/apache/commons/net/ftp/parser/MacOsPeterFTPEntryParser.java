@@ -23,9 +23,11 @@ import org.apache.commons.net.ftp.FTPClientConfig;
 import org.apache.commons.net.ftp.FTPFile;
 
 /**
- * Implementation FTPFileEntryParser and FTPFileListParser for pre MacOS-X Systems.
+ * Implementation FTPFileEntryParser and FTPFileListParser for pre MacOS-X
+ * Systems.
  *
- * @see org.apache.commons.net.ftp.FTPFileEntryParser FTPFileEntryParser (for usage instructions)
+ * @see org.apache.commons.net.ftp.FTPFileEntryParser FTPFileEntryParser (for
+ *      usage instructions)
  * @since 3.1
  */
 public class MacOsPeterFTPEntryParser extends ConfigurableFTPFileEntryParserImpl {
@@ -37,22 +39,29 @@ public class MacOsPeterFTPEntryParser extends ConfigurableFTPFileEntryParserImpl
     /**
      * this is the regular expression used by this parser.
      *
-     * Permissions: r the file is readable w the file is writable x the file is executable - the indicated permission is not granted L mandatory locking occurs
-     * during access (the set-group-ID bit is on and the group execution bit is off) s the set-user-ID or set-group-ID bit is on, and the corresponding user or
-     * group execution bit is also on S undefined bit-state (the set-user-ID bit is on and the user execution bit is off) t the 1000 (octal) bit, or sticky bit,
-     * is on [see chmod(1)], and execution is on T the 1000 bit is turned on, and execution is off (undefined bit-state) e z/OS external link bit
+     * Permissions: r the file is readable w the file is writable x the file is
+     * executable - the indicated permission is not granted L mandatory locking
+     * occurs
+     * during access (the set-group-ID bit is on and the group execution bit is off)
+     * s the set-user-ID or set-group-ID bit is on, and the corresponding user or
+     * group execution bit is also on S undefined bit-state (the set-user-ID bit is
+     * on and the user execution bit is off) t the 1000 (octal) bit, or sticky bit,
+     * is on [see chmod(1)], and execution is on T the 1000 bit is turned on, and
+     * execution is off (undefined bit-state) e z/OS external link bit
      */
     private static final String REGEX = "([bcdelfmpSs-])" // type (1)
             + "(((r|-)(w|-)([xsStTL-]))((r|-)(w|-)([xsStTL-]))((r|-)(w|-)([xsStTL-])))\\+?\\s+" // permission
             + "(" + "(folder\\s+)" + "|" + "((\\d+)\\s+(\\d+)\\s+)" // resource size & data size
             + ")" + "(\\d+)\\s+" // size
             /*
-             * numeric or standard format date: yyyy-mm-dd (expecting hh:mm to follow) MMM [d]d [d]d MMM N.B. use non-space for MMM to allow for languages such
+             * numeric or standard format date: yyyy-mm-dd (expecting hh:mm to follow) MMM
+             * [d]d [d]d MMM N.B. use non-space for MMM to allow for languages such
              * as German which use diacritics (e.g. umlaut) in some abbreviations.
              */
             + "((?:\\d+[-/]\\d+[-/]\\d+)|(?:\\S{3}\\s+\\d{1,2})|(?:\\d{1,2}\\s+\\S{3}))\\s+"
             /*
-             * year (for non-recent standard format) - yyyy or time (for numeric or recent standard format) [h]h:mm
+             * year (for non-recent standard format) - yyyy or time (for numeric or recent
+             * standard format) [h]h:mm
              */
             + "(\\d+(?::\\d+)?)\\s+"
 
@@ -61,19 +70,27 @@ public class MacOsPeterFTPEntryParser extends ConfigurableFTPFileEntryParserImpl
     /**
      * The default constructor for a UnixFTPEntryParser object.
      *
-     * @throws IllegalArgumentException Thrown if the regular expression is unparseable. Should not be seen under normal conditions. If it is seen, this is a
-     *                                  sign that {@code REGEX} is not a valid regular expression.
+     * @throws IllegalArgumentException Thrown if the regular expression is
+     *                                  unparseable. Should not be seen under normal
+     *                                  conditions. If it is seen, this is a
+     *                                  sign that {@code REGEX} is not a valid
+     *                                  regular expression.
      */
     public MacOsPeterFTPEntryParser() {
         this(null);
     }
 
     /**
-     * This constructor allows the creation of a UnixFTPEntryParser object with something other than the default configuration.
+     * This constructor allows the creation of a UnixFTPEntryParser object with
+     * something other than the default configuration.
      *
-     * @param config The {@link FTPClientConfig configuration} object used to configure this parser.
-     * @throws IllegalArgumentException Thrown if the regular expression is unparseable. Should not be seen under normal conditions. If it is seen, this is a
-     *                                  sign that {@code REGEX} is not a valid regular expression.
+     * @param config The {@link FTPClientConfig configuration} object used to
+     *               configure this parser.
+     * @throws IllegalArgumentException Thrown if the regular expression is
+     *                                  unparseable. Should not be seen under normal
+     *                                  conditions. If it is seen, this is a
+     *                                  sign that {@code REGEX} is not a valid
+     *                                  regular expression.
      * @since 1.4
      */
     public MacOsPeterFTPEntryParser(final FTPClientConfig config) {
@@ -82,7 +99,8 @@ public class MacOsPeterFTPEntryParser extends ConfigurableFTPFileEntryParserImpl
     }
 
     /**
-     * Defines a default configuration to be used when this class is instantiated without a {@link FTPClientConfig FTPClientConfig} parameter being specified.
+     * Defines a default configuration to be used when this class is instantiated
+     * without a {@link FTPClientConfig FTPClientConfig} parameter being specified.
      *
      * @return the default configuration for this parser.
      */
@@ -92,8 +110,10 @@ public class MacOsPeterFTPEntryParser extends ConfigurableFTPFileEntryParserImpl
     }
 
     /**
-     * Parses a line of a unix (standard) FTP server file listing and converts it into a usable format in the form of an {@code FTPFile} instance. If the
-     * file listing line doesn't describe a file, {@code null} is returned, otherwise a {@code FTPFile} instance representing the files in the
+     * Parses a line of a unix (standard) FTP server file listing and converts it
+     * into a usable format in the form of an {@code FTPFile} instance. If the
+     * file listing line doesn't describe a file, {@code null} is returned,
+     * otherwise a {@code FTPFile} instance representing the files in the
      * directory is returned.
      *
      * @param entry A line of text from the file listing
@@ -106,100 +126,110 @@ public class MacOsPeterFTPEntryParser extends ConfigurableFTPFileEntryParserImpl
         final int type;
         boolean isDevice = false;
 
-        if (matches(entry)) {
-            final String typeStr = group(1);
-            final String hardLinkCount = "0";
-            final String filesize = group(20);
-            final String datestr = group(21) + " " + group(22);
-            String name = group(23);
-            final String endtoken = group(24);
-
-            try {
-                file.setTimestamp(super.parseTimestamp(datestr));
-            } catch (final ParseException e) {
-                // intentionally do nothing
-            }
-
-            // A 'whiteout' file is an ARTIFICIAL entry in any of several types of
-            // 'translucent' filesystems, of which a 'union' filesystem is one.
-
-            // bcdelfmpSs-
-            switch (typeStr.charAt(0)) {
-            case 'd':
-                type = FTPFile.DIRECTORY_TYPE;
-                break;
-            case 'e': // NET-39 => z/OS external link
-                type = FTPFile.SYMBOLIC_LINK_TYPE;
-                break;
-            case 'l':
-                type = FTPFile.SYMBOLIC_LINK_TYPE;
-                break;
-            case 'b':
-            case 'c':
-                isDevice = true;
-                type = FTPFile.FILE_TYPE; // TODO change this if DEVICE_TYPE implemented
-                break;
-            case 'f':
-            case '-':
-                type = FTPFile.FILE_TYPE;
-                break;
-            default: // e.g. ? and w = whiteout
-                type = FTPFile.UNKNOWN_TYPE;
-            }
-
-            file.setType(type);
-
-            int g = 4;
-            for (int access = 0; access < 3; access++, g += 4) {
-                // Use != '-' to avoid having to check for suid and sticky bits
-                file.setPermission(access, FTPFile.READ_PERMISSION, !group(g).equals("-"));
-                file.setPermission(access, FTPFile.WRITE_PERMISSION, !group(g + 1).equals("-"));
-
-                final String execPerm = group(g + 2);
-                file.setPermission(access, FTPFile.EXECUTE_PERMISSION, !execPerm.equals("-") && !Character.isUpperCase(execPerm.charAt(0)));
-            }
-
-            if (!isDevice) {
-                try {
-                    file.setHardLinkCount(Integer.parseInt(hardLinkCount));
-                } catch (final NumberFormatException e) {
-                    // intentionally do nothing
-                }
-            }
-
-            file.setUser(null);
-            file.setGroup(null);
-
-            try {
-                file.setSize(Long.parseLong(filesize));
-            } catch (final NumberFormatException e) {
-                // intentionally do nothing
-            }
-
-            if (null == endtoken) {
-                file.setName(name);
-            } else {
-                // oddball cases like symbolic links, file names
-                // with spaces in them.
-                name += endtoken;
-                if (type == FTPFile.SYMBOLIC_LINK_TYPE) {
-
-                    final int end = name.indexOf(" -> ");
-                    // Give up if no link indicator is present
-                    if (end == -1) {
-                        file.setName(name);
-                    } else {
-                        file.setName(name.substring(0, end));
-                        file.setLink(name.substring(end + 4));
-                    }
-
-                } else {
-                    file.setName(name);
-                }
-            }
-            return file;
+        if (!matches(entry)) {
+            return null; // Restituisce null se non corrisponde
         }
-        return null;
+
+        final String typeStr = group(1);
+        final String hardLinkCount = "0";
+        final String filesize = group(20);
+        final String datestr = group(21) + " " + group(22);
+        String name = group(23);
+        final String endtoken = group(24);
+
+        // Gestione del timestamp
+        try {
+            file.setTimestamp(super.parseTimestamp(datestr));
+        } catch (final ParseException e) {
+            // intentionally do nothing
+        }
+
+        // Determinazione del tipo di file
+        type = determineFileType(typeStr);
+        file.setType(type);
+
+        // Impostazione delle permessi
+        setPermissions(file);
+
+        // Impostazione del conteggio dei hard link se non è un dispositivo
+        if (!isDevice) {
+            setHardLinkCount(file, hardLinkCount);
+        }
+
+        // Imposta user e group a null
+        file.setUser(null);
+        file.setGroup(null);
+
+        // Impostazione della dimensione
+        setFileSize(file, filesize);
+
+        // Gestione del nome e link
+        setNameAndLink(file, name, endtoken, type);
+
+        return file;
     }
 
+    private int determineFileType(String typeStr) {
+        switch (typeStr.charAt(0)) {
+            case 'd':
+                return FTPFile.DIRECTORY_TYPE;
+            case 'e':
+            case 'l':
+                return FTPFile.SYMBOLIC_LINK_TYPE;
+            case 'b':
+            case 'c':
+                return FTPFile.FILE_TYPE; // TODO change this if DEVICE_TYPE implemented
+            case 'f':
+            case '-':
+                return FTPFile.FILE_TYPE;
+            default:
+                return FTPFile.UNKNOWN_TYPE; // e.g. ? and w = whiteout
+        }
+    }
+
+    private void setPermissions(FTPFile file) {
+        int g = 4;
+        for (int access = 0; access < 3; access++, g += 4) {
+            file.setPermission(access, FTPFile.READ_PERMISSION, !group(g).equals("-"));
+            file.setPermission(access, FTPFile.WRITE_PERMISSION, !group(g + 1).equals("-"));
+
+            final String execPerm = group(g + 2);
+            file.setPermission(access, FTPFile.EXECUTE_PERMISSION,
+                    !execPerm.equals("-") && !Character.isUpperCase(execPerm.charAt(0)));
+        }
+    }
+
+    private void setHardLinkCount(FTPFile file, String hardLinkCount) {
+        try {
+            file.setHardLinkCount(Integer.parseInt(hardLinkCount));
+        } catch (final NumberFormatException e) {
+            // intentionally do nothing
+        }
+    }
+
+    private void setFileSize(FTPFile file, String filesize) {
+        try {
+            file.setSize(Long.parseLong(filesize));
+        } catch (final NumberFormatException e) {
+            // intentionally do nothing
+        }
+    }
+
+    private void setNameAndLink(FTPFile file, String name, String endtoken, int type) {
+        if (endtoken != null) {
+            name += endtoken; // Gestisci nomi speciali con endtoken
+        }
+
+        if (type == FTPFile.SYMBOLIC_LINK_TYPE) {
+            int end = name.indexOf(" -> ");
+            if (end == -1) {
+                file.setName(name);
+            } else {
+                file.setName(name.substring(0, end));
+                file.setLink(name.substring(end + 4));
+            }
+        } else {
+            file.setName(name);
+        }
+    }
 }

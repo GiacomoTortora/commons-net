@@ -461,54 +461,72 @@ public class FTPFile implements Serializable {
         }
         final StringBuilder sb = new StringBuilder();
         try (Formatter fmt = new Formatter(sb)) {
-            sb.append(formatType());
-            sb.append(permissionToString(USER_ACCESS));
-            sb.append(permissionToString(GROUP_ACCESS));
-            sb.append(permissionToString(WORLD_ACCESS));
-            fmt.format(" %4d", Integer.valueOf(getHardLinkCount()));
-            fmt.format(" %-8s %-8s", getUser(), getGroup());
-            fmt.format(" %8d", Long.valueOf(getSize()));
-            Calendar timestamp = getTimestamp();
+            appendPermissions(sb, fmt);
+            appendLinksAndUserGroup(fmt);
+            appendSize(fmt);
+
+            Calendar timestamp = getAdjustedTimestamp(timezone);
             if (timestamp != null) {
-                if (timezone != null) {
-                    final TimeZone newZone = TimeZone.getTimeZone(timezone);
-                    if (!newZone.equals(timestamp.getTimeZone())) {
-                        final Date original = timestamp.getTime();
-                        final Calendar newStamp = Calendar.getInstance(newZone);
-                        newStamp.setTime(original);
-                        timestamp = newStamp;
-                    }
-                }
-                fmt.format(" %1$tY-%1$tm-%1$td", timestamp);
-                // Only display time units if they are present
-                switch (Calendar.HOUR_OF_DAY) {
-                    case Calendar.HOUR_OF_DAY:
-                        if (timestamp.isSet(Calendar.HOUR_OF_DAY)) {
-                            fmt.format(" %1$tH", timestamp);
-                        }
-                        // Nessun break intenzionale per continuare al prossimo case.
-                    case Calendar.MINUTE:
-                        if (timestamp.isSet(Calendar.MINUTE)) {
-                            fmt.format(":%1$tM", timestamp);
-                        }
-                    case Calendar.SECOND:
-                        if (timestamp.isSet(Calendar.SECOND)) {
-                            fmt.format(":%1$tS", timestamp);
-                        }
-                    case Calendar.MILLISECOND:
-                        if (timestamp.isSet(Calendar.MILLISECOND)) {
-                            fmt.format(".%1$tL", timestamp);
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                fmt.format(" %1$tZ", timestamp);
+                appendTimestamp(fmt, timestamp);
             }
+
             sb.append(' ');
             sb.append(getName());
         }
         return sb.toString();
+    }
+
+    // Metodi helper per semplificare la logica
+
+    private void appendPermissions(StringBuilder sb, Formatter fmt) {
+        sb.append(formatType());
+        sb.append(permissionToString(USER_ACCESS));
+        sb.append(permissionToString(GROUP_ACCESS));
+        sb.append(permissionToString(WORLD_ACCESS));
+    }
+
+    private void appendLinksAndUserGroup(Formatter fmt) {
+        fmt.format(" %4d", Integer.valueOf(getHardLinkCount()));
+        fmt.format(" %-8s %-8s", getUser(), getGroup());
+    }
+
+    private void appendSize(Formatter fmt) {
+        fmt.format(" %8d", Long.valueOf(getSize()));
+    }
+
+    private Calendar getAdjustedTimestamp(final String timezone) {
+        Calendar timestamp = getTimestamp();
+        if (timestamp != null && timezone != null) {
+            final TimeZone newZone = TimeZone.getTimeZone(timezone);
+            if (!newZone.equals(timestamp.getTimeZone())) {
+                final Date original = timestamp.getTime();
+                final Calendar newStamp = Calendar.getInstance(newZone);
+                newStamp.setTime(original);
+                timestamp = newStamp;
+            }
+        }
+        return timestamp;
+    }
+
+    private void appendTimestamp(Formatter fmt, Calendar timestamp) {
+        fmt.format(" %1$tY-%1$tm-%1$td", timestamp);
+        appendTimeUnits(fmt, timestamp);
+        fmt.format(" %1$tZ", timestamp);
+    }
+
+    private void appendTimeUnits(Formatter fmt, Calendar timestamp) {
+        if (timestamp.isSet(Calendar.HOUR_OF_DAY)) {
+            fmt.format(" %1$tH", timestamp);
+        }
+        if (timestamp.isSet(Calendar.MINUTE)) {
+            fmt.format(":%1$tM", timestamp);
+        }
+        if (timestamp.isSet(Calendar.SECOND)) {
+            fmt.format(":%1$tS", timestamp);
+        }
+        if (timestamp.isSet(Calendar.MILLISECOND)) {
+            fmt.format(".%1$tL", timestamp);
+        }
     }
 
     /*

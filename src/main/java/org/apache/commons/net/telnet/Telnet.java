@@ -377,53 +377,62 @@ class Telnet extends SocketClient {
             System.err.println("RECEIVED DO: " + TelnetOption.getOption(option));
         }
 
+        notifyHandler(option);
+
+        boolean acceptNewState = evaluateOptionAcceptance(option);
+        processWillResponse(option, acceptNewState);
+
+        setWill(option);
+    }
+
+    private void notifyHandler(final int option) throws IOException {
         if (notifhand != null) {
             notifhand.receivedNegotiation(TelnetNotificationHandler.RECEIVED_DO, option);
         }
+    }
 
-        boolean acceptNewState = false;
-
-        /* open TelnetOptionHandler functionality (start) */
+    private boolean evaluateOptionAcceptance(final int option) {
         if (optionHandlers[option] != null) {
-            acceptNewState = optionHandlers[option].getAcceptLocal();
+            return optionHandlers[option].getAcceptLocal();
         } else if (option == TERMINAL_TYPE && terminalType != null && !terminalType.isEmpty()) {
-            acceptNewState = true;
+            return true;
         }
-        /* TERMINAL-TYPE option (end) */
-        /* open TelnetOptionHandler functionality (start) */
+        return false;
+    }
 
+    private void processWillResponse(final int option, boolean acceptNewState) throws IOException {
         if (willResponse[option] > 0) {
-            --willResponse[option];
-            if (willResponse[option] > 0 && stateIsWill(option)) {
-                --willResponse[option];
-            }
+            decrementWillResponse(option);
         }
 
         if (willResponse[option] == 0) {
             if (requestedWont(option)) {
-                // Handle requested WONT for specific options
-                switch (option) {
-                    default:
-                        break;
-                }
-
-                if (acceptNewState) {
-                    setWantWill(option);
-                    sendWill(option);
-                } else {
-                    ++willResponse[option];
-                    sendWont(option);
-                }
+                handleRequestedWont(option, acceptNewState);
             } else {
-                // Other end has acknowledged option.
-                switch (option) {
-                    default:
-                        break;
-                }
+                acknowledgeOption(option);
             }
         }
+    }
 
-        setWill(option);
+    private void decrementWillResponse(final int option) {
+        --willResponse[option];
+        if (willResponse[option] > 0 && stateIsWill(option)) {
+            --willResponse[option];
+        }
+    }
+
+    private void handleRequestedWont(final int option, boolean acceptNewState) throws IOException {
+        if (acceptNewState) {
+            setWantWill(option);
+            sendWill(option);
+        } else {
+            ++willResponse[option];
+            sendWont(option);
+        }
+    }
+
+    private void acknowledgeOption(final int option) {
+        // Placeholder for any specific option handling.
     }
 
     /**
@@ -480,28 +489,46 @@ class Telnet extends SocketClient {
             System.err.println("PROCESS SUBOPTION.");
         }
 
-        /* open TelnetOptionHandler functionality (start) */
         if (suboptionLength > 0) {
             int firstOption = suboption[0];
-            switch (firstOption) {
-                case TERMINAL_TYPE:
-                    if (suboptionLength > 1 && suboption[1] == TERMINAL_TYPE_SEND) {
-                        sendTerminalType();
-                    }
-                    break;
-                default:
-                if (optionHandlers[firstOption] != null) {
-                    final int[] responseSuboption = optionHandlers[firstOption].answerSubnegotiation(suboption, suboptionLength);
-                    _sendSubnegotiation(responseSuboption);
-                } else if (suboptionLength > 1 && DEBUG) {
-                    for (int ii = 0; ii < suboptionLength; ii++) {
-                        System.err.println("SUB[" + ii + "]: " + suboption[ii]);
-                    }
-                }
-                    break;
+            handleFirstOption(firstOption, suboption, suboptionLength);
+        }
+    }
+
+    private void handleFirstOption(int firstOption, final int[] suboption, final int suboptionLength)
+            throws IOException {
+        switch (firstOption) {
+            case TERMINAL_TYPE:
+                handleTerminalType(suboption, suboptionLength);
+                break;
+            default:
+                handleDefaultOption(firstOption, suboption, suboptionLength);
+                break;
+        }
+    }
+
+    private void handleTerminalType(final int[] suboption, final int suboptionLength) throws IOException {
+        if (suboptionLength > 1 && suboption[1] == TERMINAL_TYPE_SEND) {
+            sendTerminalType();
+        }
+    }
+
+    private void handleDefaultOption(int firstOption, final int[] suboption, final int suboptionLength)
+            throws IOException {
+        if (optionHandlers[firstOption] != null) {
+            int[] responseSuboption = optionHandlers[firstOption].answerSubnegotiation(suboption, suboptionLength);
+            _sendSubnegotiation(responseSuboption);
+        } else {
+            debugPrintSuboptions(suboption, suboptionLength);
+        }
+    }
+
+    private void debugPrintSuboptions(final int[] suboption, final int suboptionLength) {
+        if (suboptionLength > 1 && DEBUG) {
+            for (int ii = 0; ii < suboptionLength; ii++) {
+                System.err.println("SUB[" + ii + "]: " + suboption[ii]);
             }
         }
-        /* open TelnetOptionHandler functionality (end) */
     }
 
     /**

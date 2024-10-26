@@ -45,107 +45,96 @@ public class Threader {
         NntpThreadContainer container = idTable.get(id);
         int bogusIdCount = 0;
 
-        // A NntpThreadContainer exists for this id already. This should be a forward
-        // reference, but may
-        // be a duplicate id, in which case we will need to generate a bogus placeholder
-        // id
+        container = processContainer(container, threadable, idTable, id, bogusIdCount);
+
+        NntpThreadContainer parentRef = processReferences(threadable, idTable);
+
+        resolveParentRelationship(container, parentRef);
+    }
+
+    private NntpThreadContainer processContainer(NntpThreadContainer container, Threadable threadable,
+            HashMap<String, NntpThreadContainer> idTable, String id, int bogusIdCount) {
         if (container != null) {
             switch (Boolean.compare(container.threadable != null, false)) {
-                case 1: // container.threadable is not null (duplicate ids)
+                case 1: // Duplicate ids, create a new bogus id
                     bogusIdCount++;
                     id = "<Bogus-id:" + bogusIdCount + ">";
                     container = null;
                     break;
-
-                case 0: // container.threadable is null (forward reference)
-                    // Fill in the threadable field of the container with this message
+                case 0: // Forward reference, update container
                     container.threadable = threadable;
                     break;
-
                 default:
-                    // Do nothing for the case where the condition is false
+                    // Do nothing
                     break;
             }
         }
 
-        // No container exists for that message Id. Create one and insert it into the
-        // hash table.
         if (container == null) {
             container = new NntpThreadContainer();
             container.threadable = threadable;
             idTable.put(id, container);
         }
 
-        // Iterate through all the references and create ThreadContainers for any
-        // references that
-        // don't have them.
+        return container;
+    }
+
+    private NntpThreadContainer processReferences(Threadable threadable, HashMap<String, NntpThreadContainer> idTable) {
         NntpThreadContainer parentRef = null;
-        {
-            final String[] references = threadable.messageThreadReferences();
-            for (final String refString : references) {
-                NntpThreadContainer ref = idTable.get(refString);
+        final String[] references = threadable.messageThreadReferences();
 
-                // if this id doesn't have a container, create one
-                if (ref == null) {
-                    ref = new NntpThreadContainer();
-                    idTable.put(refString, ref);
-                }
+        for (final String refString : references) {
+            NntpThreadContainer ref = idTable.computeIfAbsent(refString, k -> new NntpThreadContainer());
 
-                // Link references together in the order they appear in the References: header,
-                // IF they don't have a parent already &&
-                // IF it will not cause a circular reference
-                if (parentRef != null && ref.parent == null && parentRef != ref && !ref.findChild(parentRef)) {
-                    // Link ref into the parent's child list
-                    ref.parent = parentRef;
-                    ref.next = parentRef.child;
-                    parentRef.child = ref;
-                }
-                parentRef = ref;
+            if (parentRef != null && ref.parent == null && parentRef != ref && !ref.findChild(parentRef)) {
+                linkParentChild(parentRef, ref);
             }
+            parentRef = ref;
         }
+        return parentRef;
+    }
 
-        // parentRef is now set to the container of the last element in the references
-        // field. make that
-        // be the parent of this container, unless doing so causes a circular reference
+    private void linkParentChild(NntpThreadContainer parent, NntpThreadContainer child) {
+        child.parent = parent;
+        child.next = parent.child;
+        parent.child = child;
+    }
+
+    private void resolveParentRelationship(NntpThreadContainer container, NntpThreadContainer parentRef) {
         if (parentRef != null && (parentRef == container || container.findChild(parentRef))) {
             parentRef = null;
         }
 
-        // if it has a parent already, it's because we saw this message in a References:
-        // field, and presumed
-        // a parent based on the other entries in that field. Now that we have the
-        // actual message, we can
-        // throw away the old parent and use this new one
         if (container.parent != null) {
-            NntpThreadContainer rest, prev;
-
-            for (prev = null, rest = container.parent.child; rest != null; prev = rest, rest = rest.next) {
-                if (rest == container) {
-                    break;
-                }
-            }
-
-            if (rest == null) {
-                throw new IllegalStateException("Didnt find " + container + " in parent " + container.parent);
-            }
-
-            // Unlink this container from the parent's child list
-            if (prev == null) {
-                container.parent.child = container.next;
-            } else {
-                prev.next = container.next;
-            }
-
-            container.next = null;
-            container.parent = null;
+            unlinkContainerFromParent(container);
         }
 
-        // If we have a parent, link container into the parent's child list
         if (parentRef != null) {
-            container.parent = parentRef;
-            container.next = parentRef.child;
-            parentRef.child = container;
+            linkParentChild(parentRef, container);
         }
+    }
+
+    private void unlinkContainerFromParent(NntpThreadContainer container) {
+        NntpThreadContainer rest, prev = null;
+
+        for (rest = container.parent.child; rest != null; prev = rest, rest = rest.next) {
+            if (rest == container) {
+                break;
+            }
+        }
+
+        if (rest == null) {
+            throw new IllegalStateException("Didn't find " + container + " in parent " + container.parent);
+        }
+
+        if (prev == null) {
+            container.parent.child = container.next;
+        } else {
+            prev.next = container.next;
+        }
+
+        container.next = null;
+        container.parent = null;
     }
 
     /**
@@ -176,72 +165,87 @@ public class Threader {
      * @param root
      */
     private void gatherSubjects(final NntpThreadContainer root) {
-        int count = 0;
+        int count = countChildren(root);
 
-        // Contare i nodi figli
-        for (NntpThreadContainer c = root.child; c != null; c = c.next) {
-            count++;
-        }
-
-        HashMap<String, NntpThreadContainer> subjectTable = new HashMap<>((int) (count * 1.2), (float) 0.9);
-        count = 0;
+        HashMap<String, NntpThreadContainer> subjectTable = initializeSubjectTable(count);
 
         // Popolazione della subjectTable
-        for (NntpThreadContainer c = root.child; c != null; c = c.next) {
-            Threadable threadable = c.threadable;
-
-            // No threadable? If so, it is a dummy node in the root set.
-            if (threadable == null) {
-                threadable = c.child.threadable;
-            }
-
-            final String subj = threadable.simplifiedSubject();
-
-            if (subj == null || subj.isEmpty()) {
-                continue;
-            }
-
-            final NntpThreadContainer old = subjectTable.get(subj);
-
-            // Logica di aggiunta al subjectTable
-            boolean addToTable = false;
-
-            switch (checkConditionsToAdd(old, c)) {
-                case 1: // old == null
-                    addToTable = true;
-                    break;
-                case 2: // c.threadable == null && old.threadable != null
-                    addToTable = true;
-                    break;
-                case 3: // old.threadable != null && old.threadable.subjectIsReply() && c.threadable !=
-                        // null && !c.threadable.subjectIsReply()
-                    addToTable = true;
-                    break;
-            }
-
-            if (addToTable) {
-                subjectTable.put(subj, c);
-                count++;
-            }
-        }
+        count = populateSubjectTable(root, subjectTable);
 
         if (count == 0) {
             return;
         }
 
-        // Iterazione sulla root set
-        NntpThreadContainer prev, c, rest;
-        for (prev = null, c = root.child, rest = c.next; c != null; prev = c, c = rest, rest = rest == null ? null
-                : rest.next) {
-            Threadable threadable = c.threadable;
+        // Iterazione sulla root set e rimozione dei messaggi duplicati
+        removeDuplicateMessages(root, subjectTable);
 
-            if (threadable == null) {
-                threadable = c.child.threadable;
-            }
+        subjectTable.clear();
+    }
+
+    // Metodo per contare i figli
+    private int countChildren(NntpThreadContainer root) {
+        int count = 0;
+        for (NntpThreadContainer c = root.child; c != null; c = c.next) {
+            count++;
+        }
+        return count;
+    }
+
+    // Metodo per inizializzare la subjectTable
+    private HashMap<String, NntpThreadContainer> initializeSubjectTable(int count) {
+        return new HashMap<>((int) (count * 1.2), 0.9f);
+    }
+
+    // Metodo per popolare la subjectTable
+    private int populateSubjectTable(NntpThreadContainer root, HashMap<String, NntpThreadContainer> subjectTable) {
+        int count = 0;
+        for (NntpThreadContainer c = root.child; c != null; c = c.next) {
+            Threadable threadable = getThreadable(c);
 
             final String subj = threadable.simplifiedSubject();
+            if (isSubjectInvalid(subj)) {
+                continue;
+            }
 
-            if (subj == null || subj.isEmpty()) {
+            if (shouldAddToTable(subjectTable.get(subj), c)) {
+                subjectTable.put(subj, c);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    // Verifica se il soggetto è valido
+    private boolean isSubjectInvalid(String subj) {
+        return subj == null || subj.isEmpty();
+    }
+
+    // Ottiene l'oggetto Threadable dal nodo
+    private Threadable getThreadable(NntpThreadContainer container) {
+        return container.threadable == null ? container.child.threadable : container.threadable;
+    }
+
+    // Verifica se il nodo deve essere aggiunto alla subjectTable
+    private boolean shouldAddToTable(NntpThreadContainer old, NntpThreadContainer c) {
+        switch (checkConditionsToAdd(old, c)) {
+            case 1:
+            case 2:
+            case 3:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    // Metodo per rimuovere i messaggi duplicati dalla root
+    private void removeDuplicateMessages(NntpThreadContainer root, HashMap<String, NntpThreadContainer> subjectTable) {
+        NntpThreadContainer prev = null;
+        for (NntpThreadContainer c = root.child,
+                rest = c.next; c != null; prev = c, c = rest, rest = (rest == null ? null : rest.next)) {
+            Threadable threadable = getThreadable(c);
+            final String subj = threadable.simplifiedSubject();
+
+            if (isSubjectInvalid(subj)) {
                 continue;
             }
 
@@ -251,22 +255,20 @@ public class Threader {
                 continue;
             }
 
-            // Gestione della rimozione del messaggio
-            if (prev == null) {
-                root.child = c.next;
-            } else {
-                prev.next = c.next;
-            }
-            c.next = null;
-
+            removeContainer(root, prev, c);
             handleMerging(old, c);
-
-            // Manteniamo lo stesso prev
-            c = prev;
+            c = prev; // Manteniamo lo stesso prev
         }
+    }
 
-        subjectTable.clear();
-        subjectTable = null;
+    // Rimozione di un contenitore dalla root set
+    private void removeContainer(NntpThreadContainer root, NntpThreadContainer prev, NntpThreadContainer c) {
+        if (prev == null) {
+            root.child = c.next;
+        } else {
+            prev.next = c.next;
+        }
+        c.next = null;
     }
 
     // Metodo per controllare le condizioni di aggiunta alla subjectTable
@@ -335,73 +337,80 @@ public class Threader {
      * @param parent
      */
     private void pruneEmptyContainers(final NntpThreadContainer parent) {
-        NntpThreadContainer container, prev, next;
-        for (prev = null, container = parent.child, next = container != null ? container.next
-                : null; container != null; prev = container, container = next, next = container.next) {
+        NntpThreadContainer prev = null;
+        NntpThreadContainer container = parent.child;
+        NntpThreadContainer next = (container != null) ? container.next : null;
 
-            // Determina il tipo di stato del contenitore
-            String state = "VALID";
-
-            if (container.threadable == null && container.child == null) {
-                state = "EMPTY_NO_CHILDREN"; // Vuoto e senza figli
-            } else if (container.threadable == null && (container.parent != null || container.child.next == null)) {
-                state = "EMPTY_WITH_KIDS"; // Vuoto con figli
-            } else if (container.child != null) {
-                state = "REAL_MESSAGE_WITH_KIDS"; // Messaggio reale con figli
-            }
+        while (container != null) {
+            String state = determineState(container);
 
             switch (state) {
                 case "EMPTY_NO_CHILDREN":
-                    // Is it empty and without any children? If so, delete it
-                    if (prev == null) {
-                        parent.child = container.next;
-                    } else {
-                        prev.next = container.next;
-                    }
-                    // Set container to prev so that prev keeps its same value the next time through
-                    // the loop
+                    removeEmptyContainer(parent, prev, container);
                     container = prev;
                     break;
 
                 case "EMPTY_WITH_KIDS":
-                    // We have an invalid/expired message with kids. Promote the kids to this level.
-                    NntpThreadContainer tail;
-                    final NntpThreadContainer kids = container.child;
-
-                    // Remove this container and replace with 'kids'.
-                    if (prev == null) {
-                        parent.child = kids;
-                    } else {
-                        prev.next = kids;
-                    }
-
-                    // Make each child's parent be this level's parent -> i.e. promote the children.
-                    // Make the last child's next point to this container's next
-                    // i.e. splice kids into the list in place of container
-                    for (tail = kids; tail.next != null; tail = tail.next) {
-                        tail.parent = container.parent;
-                    }
-
-                    tail.parent = container.parent;
-                    tail.next = container.next;
-
-                    // next currently points to the item after the inserted items in the chain -
-                    // reset that, so we process the newly
-                    // promoted items next time round
-                    next = kids;
-
-                    // Set container to prev so that prev keeps its same value the next time through
-                    // the loop
+                    promoteChildren(parent, prev, container);
+                    next = container.child;
                     container = prev;
                     break;
 
                 case "REAL_MESSAGE_WITH_KIDS":
-                    // A real message , with kids
-                    // Iterate over the children
                     pruneEmptyContainers(container);
                     break;
+
+                default:
+                    break;
             }
+
+            prev = container;
+            container = next;
+            next = (container != null) ? container.next : null;
         }
+    }
+
+    private String determineState(NntpThreadContainer container) {
+        if (container.threadable == null && container.child == null) {
+            return "EMPTY_NO_CHILDREN";
+        } else if (container.threadable == null && (container.parent != null || container.child.next == null)) {
+            return "EMPTY_WITH_KIDS";
+        } else if (container.child != null) {
+            return "REAL_MESSAGE_WITH_KIDS";
+        }
+        return "VALID";
+    }
+
+    private void removeEmptyContainer(NntpThreadContainer parent, NntpThreadContainer prev,
+            NntpThreadContainer container) {
+        if (prev == null) {
+            parent.child = container.next;
+        } else {
+            prev.next = container.next;
+        }
+    }
+
+    private void promoteChildren(NntpThreadContainer parent, NntpThreadContainer prev, NntpThreadContainer container) {
+        NntpThreadContainer kids = container.child;
+
+        if (prev == null) {
+            parent.child = kids;
+        } else {
+            prev.next = kids;
+        }
+
+        NntpThreadContainer tail = updateParentAndFindTail(kids, container);
+        tail.next = container.next;
+    }
+
+    private NntpThreadContainer updateParentAndFindTail(NntpThreadContainer kids, NntpThreadContainer container) {
+        NntpThreadContainer tail = kids;
+        while (tail.next != null) {
+            tail.parent = container.parent;
+            tail = tail.next;
+        }
+        tail.parent = container.parent;
+        return tail;
     }
 
     /**

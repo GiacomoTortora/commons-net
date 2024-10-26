@@ -328,62 +328,82 @@ public class Article implements Threadable<Article> {
         int start = 0;
         final String subject = getSubject();
         final int len = subject.length();
-
         boolean done = false;
 
         while (!done) {
             done = true;
 
-            // Skip whitespace
-            while (start < len && subject.charAt(start) == ' ') {
-                start++;
-            }
+            // Salta spazi bianchi iniziali
+            start = skipLeadingWhitespace(subject, start, len);
 
-            // Simplify "Re: " and variations
-            if (start < len - 2 && (subject.charAt(start) == 'r' || subject.charAt(start) == 'R') &&
-                    (subject.charAt(start + 1) == 'e' || subject.charAt(start + 1) == 'E')) {
+            // Semplifica "Re: " e variazioni
+            start = simplifyReplyPrefix(subject, start, len);
 
-                switch (subject.charAt(start + 2)) {
-                    case ':':
-                        start += 3; // Skip "Re:"
-                        done = false;
-                        break;
-                    case '[':
-                    case '(':
-                        int i = start + 3;
+            // Gestisce il caso "(no subject)"
+            handleNoSubject();
 
-                        // Skip numeric characters
-                        while (i < len && Character.isDigit(subject.charAt(i))) {
-                            i++;
-                        }
+            // Imposta il soggetto semplificato rimuovendo gli spazi bianchi finali
+            simplifiedSubject = extractSimplifiedSubject(subject, start, len);
+        }
+    }
 
-                        if (i < len - 1 && (subject.charAt(i) == ']' || subject.charAt(i) == ')')
-                                && subject.charAt(i + 1) == ':') {
-                            start = i + 2;
-                            done = false;
-                        }
-                        break;
-                }
-            }
+    private int skipLeadingWhitespace(String subject, int start, int len) {
+        while (start < len && subject.charAt(start) == ' ') {
+            start++;
+        }
+        return start;
+    }
 
-            // Handle (no subject)
-            if ("(no subject)".equals(simplifiedSubject)) {
-                simplifiedSubject = "";
-            }
-
-            // Trim trailing whitespace
-            int end = len;
-            while (end > start && subject.charAt(end - 1) < ' ') {
-                end--;
-            }
-
-            // Set simplified subject
-            if (start == 0 && end == len) {
-                simplifiedSubject = subject;
-            } else {
-                simplifiedSubject = subject.substring(start, end);
+    private int simplifyReplyPrefix(String subject, int start, int len) {
+        if (start < len - 2 && isReplyPrefix(subject, start)) {
+            switch (subject.charAt(start + 2)) {
+                case ':':
+                    start += 3; // Salta "Re:"
+                    break;
+                case '[':
+                case '(':
+                    int i = start + 3;
+                    while (i < len && Character.isDigit(subject.charAt(i))) {
+                        i++;
+                    }
+                    if (isValidReplySuffix(subject, i, len)) {
+                        start = i + 2;
+                    }
+                    break;
+                default:
+                    break;
             }
         }
+        return start;
+    }
+
+    private boolean isReplyPrefix(String subject, int start) {
+        return (subject.charAt(start) == 'r' || subject.charAt(start) == 'R') &&
+                (subject.charAt(start + 1) == 'e' || subject.charAt(start + 1) == 'E');
+    }
+
+    private boolean isValidReplySuffix(String subject, int i, int len) {
+        return i < len - 1 && (subject.charAt(i) == ']' || subject.charAt(i) == ')')
+                && subject.charAt(i + 1) == ':';
+    }
+
+    private void handleNoSubject() {
+        if ("(no subject)".equals(simplifiedSubject)) {
+            simplifiedSubject = "";
+        }
+    }
+
+    private String extractSimplifiedSubject(String subject, int start, int len) {
+        int end = trimTrailingWhitespace(subject, len, start);
+        return (start == 0 && end == len) ? subject : subject.substring(start, end);
+    }
+
+    private int trimTrailingWhitespace(String subject, int len, int start) {
+        int end = len;
+        while (end > start && subject.charAt(end - 1) < ' ') {
+            end--;
+        }
+        return end;
     }
 
     @Override

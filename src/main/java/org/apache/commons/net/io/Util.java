@@ -329,45 +329,18 @@ public final class Util {
      *                             getIOException() methods.
      */
     public static long copyStream(final InputStream source, final OutputStream dest, final int bufferSize,
-            final long streamSize,
-            final CopyStreamListener listener, final boolean flush) throws CopyStreamException {
-        int numBytes;
+            final long streamSize, final CopyStreamListener listener, final boolean flush)
+            throws CopyStreamException {
         long total = 0;
         final byte[] buffer = new byte[bufferSize > 0 ? bufferSize : DEFAULT_COPY_BUFFER_SIZE];
 
         try {
+            int numBytes;
             while ((numBytes = source.read(buffer)) != NetConstants.EOS) {
-                // Technically, some read(byte[]) methods may return 0, and we cannot
-                // accept that as an indication of EOF.
-
-                switch (numBytes) {
-                    case 0:
-                        // Handle single byte read
-                        final int singleByte = source.read();
-                        if (singleByte < 0) {
-                            return total; // End of stream reached
-                        }
-                        dest.write(singleByte);
-                        if (flush) {
-                            dest.flush();
-                        }
-                        ++total;
-                        if (listener != null) {
-                            listener.bytesTransferred(total, 1, streamSize);
-                        }
-                        break;
-
-                    default:
-                        // Handle buffer write
-                        dest.write(buffer, 0, numBytes);
-                        if (flush) {
-                            dest.flush();
-                        }
-                        total += numBytes;
-                        if (listener != null) {
-                            listener.bytesTransferred(total, numBytes, streamSize);
-                        }
-                        break;
+                if (numBytes == 0) {
+                    total += handleSingleByteRead(source, dest, listener, total, streamSize, flush);
+                } else {
+                    total += handleBufferWrite(dest, listener, buffer, numBytes, total, streamSize, flush);
                 }
             }
         } catch (final IOException e) {
@@ -375,6 +348,37 @@ public final class Util {
         }
 
         return total;
+    }
+
+    private static int handleSingleByteRead(InputStream source, OutputStream dest, CopyStreamListener listener,
+            long total, long streamSize, boolean flush) throws IOException {
+        final int singleByte = source.read();
+        if (singleByte < 0) {
+            return 0; // End of stream reached
+        }
+
+        dest.write(singleByte);
+        if (flush) {
+            dest.flush();
+        }
+
+        if (listener != null) {
+            listener.bytesTransferred(total + 1, 1, streamSize);
+        }
+        return 1;
+    }
+
+    private static int handleBufferWrite(OutputStream dest, CopyStreamListener listener, byte[] buffer, int numBytes,
+            long total, long streamSize, boolean flush) throws IOException {
+        dest.write(buffer, 0, numBytes);
+        if (flush) {
+            dest.flush();
+        }
+
+        if (listener != null) {
+            listener.bytesTransferred(total + numBytes, numBytes, streamSize);
+        }
+        return numBytes;
     }
 
     /**

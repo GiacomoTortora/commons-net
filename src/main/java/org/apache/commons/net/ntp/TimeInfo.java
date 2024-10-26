@@ -130,66 +130,80 @@ public class TimeInfo {
             return; // details already computed - do nothing
         }
         detailsComputed = true;
-        if (comments == null) {
-            comments = new ArrayList<>();
-        }
+        initializeCommentsIfNeeded();
 
         final TimeStamp origNtpTime = message.getOriginateTimeStamp();
         final long origTimeMillis = origNtpTime.getTime();
-
-        // Receive Time is time request received by server (t2)
         final TimeStamp rcvNtpTime = message.getReceiveTimeStamp();
         final long rcvTimeMillis = rcvNtpTime.getTime();
-
-        // Transmit time is time reply sent by server (t3)
         final TimeStamp xmitNtpTime = message.getTransmitTimeStamp();
         final long xmitTimeMillis = xmitNtpTime.getTime();
 
-        if (origNtpTime.ntpValue() == 0) {
-            // without originate time cannot determine when packet went out
-            // might be via a broadcast NTP packet...
-            if (xmitNtpTime.ntpValue() != 0) {
-                offsetMillis = Long.valueOf(xmitTimeMillis - returnTimeMillis);
-                comments.add("Error: zero orig time -- cannot compute delay");
-            } else {
-                comments.add("Error: zero orig time -- cannot compute delay/offset");
-            }
+        if (isOriginateTimeZero(origNtpTime)) {
+            handleZeroOriginateTime(xmitNtpTime, xmitTimeMillis);
         } else {
-            switch (checkNtpValues(rcvNtpTime.ntpValue(), xmitNtpTime.ntpValue())) {
-                case 1: // Case for zero receive or transmit time
-                    comments.add("Warning: zero rcvNtpTime or xmitNtpTime");
-                    // assert destTime >= origTime since network delay cannot be negative
-                    if (origTimeMillis > returnTimeMillis) {
-                        comments.add("Error: OrigTime > DestRcvTime");
-                    } else {
-                        // without receive or xmit time cannot figure out processing time
-                        // so delay is simply the network travel time
-                        delayMillis = Long.valueOf(returnTimeMillis - origTimeMillis);
-                    }
-                    handleOffsetWhenNtpValuesAreZero(rcvNtpTime, rcvTimeMillis, origTimeMillis, xmitNtpTime,
-                            xmitTimeMillis);
-                    break;
-
-                case 2: // Case for normal processing
-                    long delayValueMillis = returnTimeMillis - origTimeMillis;
-                    // assert xmitTime >= rcvTime: difference typically < 1ms
-                    if (xmitTimeMillis < rcvTimeMillis) {
-                        // server cannot send out a packet before receiving it...
-                        comments.add("Error: xmitTime < rcvTime"); // time-travel not allowed
-                    } else {
-                        // subtract processing time from round-trip network delay
-                        final long deltaMillis = xmitTimeMillis - rcvTimeMillis;
-                        delayValueMillis = adjustDelayValueMillis(delayValueMillis, deltaMillis);
-                    }
-                    delayMillis = Long.valueOf(delayValueMillis);
-                    if (origTimeMillis > returnTimeMillis) {
-                        comments.add("Error: OrigTime > DestRcvTime");
-                    }
-                    offsetMillis = Long
-                            .valueOf((rcvTimeMillis - origTimeMillis + xmitTimeMillis - returnTimeMillis) / 2);
-                    break;
-            }
+            handleNonZeroOriginateTime(origTimeMillis, rcvNtpTime, rcvTimeMillis, xmitNtpTime, xmitTimeMillis);
         }
+    }
+
+    private void initializeCommentsIfNeeded() {
+        if (comments == null) {
+            comments = new ArrayList<>();
+        }
+    }
+
+    private boolean isOriginateTimeZero(TimeStamp origNtpTime) {
+        return origNtpTime.ntpValue() == 0;
+    }
+
+    private void handleZeroOriginateTime(TimeStamp xmitNtpTime, long xmitTimeMillis) {
+        if (xmitNtpTime.ntpValue() != 0) {
+            offsetMillis = Long.valueOf(xmitTimeMillis - returnTimeMillis);
+            comments.add("Error: zero orig time -- cannot compute delay");
+        } else {
+            comments.add("Error: zero orig time -- cannot compute delay/offset");
+        }
+    }
+
+    private void handleNonZeroOriginateTime(long origTimeMillis, TimeStamp rcvNtpTime, long rcvTimeMillis,
+            TimeStamp xmitNtpTime, long xmitTimeMillis) {
+        switch (checkNtpValues(rcvNtpTime.ntpValue(), xmitNtpTime.ntpValue())) {
+            case 1:
+                handleZeroReceiveOrTransmitTime(origTimeMillis, rcvNtpTime, rcvTimeMillis, xmitNtpTime, xmitTimeMillis);
+                break;
+            case 2:
+                handleNormalProcessing(origTimeMillis, rcvTimeMillis, xmitTimeMillis);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void handleZeroReceiveOrTransmitTime(long origTimeMillis, TimeStamp rcvNtpTime, long rcvTimeMillis,
+            TimeStamp xmitNtpTime, long xmitTimeMillis) {
+        comments.add("Warning: zero rcvNtpTime or xmitNtpTime");
+        if (origTimeMillis > returnTimeMillis) {
+            comments.add("Error: OrigTime > DestRcvTime");
+        } else {
+            delayMillis = Long.valueOf(returnTimeMillis - origTimeMillis);
+        }
+        handleOffsetWhenNtpValuesAreZero(rcvNtpTime, rcvTimeMillis, origTimeMillis, xmitNtpTime, xmitTimeMillis);
+    }
+
+    private void handleNormalProcessing(long origTimeMillis, long rcvTimeMillis, long xmitTimeMillis) {
+        long delayValueMillis = returnTimeMillis - origTimeMillis;
+        if (xmitTimeMillis < rcvTimeMillis) {
+            comments.add("Error: xmitTime < rcvTime");
+        } else {
+            final long deltaMillis = xmitTimeMillis - rcvTimeMillis;
+            delayValueMillis = adjustDelayValueMillis(delayValueMillis, deltaMillis);
+        }
+        delayMillis = Long.valueOf(delayValueMillis);
+
+        if (origTimeMillis > returnTimeMillis) {
+            comments.add("Error: OrigTime > DestRcvTime");
+        }
+        offsetMillis = Long.valueOf((rcvTimeMillis - origTimeMillis + xmitTimeMillis - returnTimeMillis) / 2);
     }
 
     private int checkNtpValues(long rcvNtpValue, long xmitNtpValue) {

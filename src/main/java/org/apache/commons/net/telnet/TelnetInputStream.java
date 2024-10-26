@@ -487,55 +487,72 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
 
     @Override
     public void run() {
-        int ch;
-
         try {
-            _outerLoop: while (!isClosed) {
-                try {
-                    if ((ch = read(true)) < 0) {
-                        break;
-                    }
-                } catch (final InterruptedIOException e) {
-                    handleInterruptedIOException(e);
-                    continue; // Continue to the next iteration after handling the exception
-                } catch (final RuntimeException re) {
-                    handleRuntimeException();
-                    break _outerLoop; // Exit the outer loop on RuntimeException
-                }
-
-                // Process new character
-                boolean notify = false;
-                try {
-                    notify = processChar(ch);
-                } catch (final InterruptedException e) {
-                    if (isClosed) {
-                        break _outerLoop; // Exit if closed
-                    }
-                }
-
-                // Notify input listener if buffer was previously empty
-                if (notify) {
-                    client.notifyInputListener();
-                }
-            }
+            processInputLoop();
         } catch (final IOException ioe) {
             handleIOException(ioe);
+        } finally {
+            cleanupAndNotify();
+            threaded = false; // Clean up thread state
+        }
+    }
+
+    private void processInputLoop() throws IOException {
+        int ch;
+
+        _outerLoop: while (!isClosed) {
+            try {
+                ch = readCharacter();
+                if (ch < 0) {
+                    break;
+                }
+            } catch (final InterruptedIOException e) {
+                handleInterruptedIOException(e);
+                continue; // Continue to the next iteration after handling the exception
+            } catch (final RuntimeException re) {
+                handleRuntimeException();
+                break _outerLoop; // Exit the outer loop on RuntimeException
+            }
+
+            processCharacter(ch);
+        }
+    }
+
+    private int readCharacter() throws IOException {
+        return read(true);
+    }
+
+    private void processCharacter(int ch) {
+        boolean notify = false;
+        try {
+            notify = processChar(ch);
+        } catch (final InterruptedException e) {
+            if (isClosed) {
+                throw new RuntimeException("Stream closed during processing", e);
+            }
         }
 
-        cleanupAndNotify();
-        threaded = false; // Clean up thread state
+        // Notify input listener if buffer was previously empty
+        if (notify) {
+            client.notifyInputListener();
+        }
     }
 
     private void handleInterruptedIOException(InterruptedIOException e) {
         synchronized (queue) {
             ioException = e;
             queue.notifyAll();
-            try {
-                queue.wait(100);
-            } catch (final InterruptedException interrupted) {
-                if (isClosed) {
-                    throw new RuntimeException("Stream closed during wait", interrupted); // Handle stream closed
-                                                                                          // scenario
+
+            while (ioException != null) { // Condizione di attesa
+                try {
+                    queue.wait(100); // Attendi che la condizione cambi
+                } catch (final InterruptedException interrupted) {
+                    if (isClosed) {
+                        throw new RuntimeException("Stream closed during wait", interrupted); // Gestisce il caso di
+                                                                                              // stream chiuso
+                    }
+                    // Reimposta lo stato di interruzione del thread
+                    Thread.currentThread().interrupt();
                 }
             }
         }

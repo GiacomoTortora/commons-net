@@ -541,14 +541,8 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
         }
     }
 
-    private void handleRuntimeException() {
-        try {
-            // Treat any runtime exceptions as though the stream has been closed.
-            super.close(); // Close the underlying stream
-        } catch (IOException e) {
-            // Handle IOException from super.close() if needed
-            e.printStackTrace(); // Log or handle as appropriate
-        }
+    private void handleRuntimeException() throws IOException {
+        super.close();
     }
 
     private void handleIOException(IOException ioe) {
@@ -562,7 +556,7 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
         synchronized (queue) {
             isClosed = true; // Possibly redundant
             hasReachedEOF = true;
-            queue.notify(); // Notify any waiting threads
+            queue.notifyAll(); // Notify any waiting threads
         }
     }
 

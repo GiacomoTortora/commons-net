@@ -405,12 +405,8 @@ class Telnet extends SocketClient {
             decrementWillResponse(option);
         }
 
-        if (willResponse[option] == 0) {
-            if (requestedWont(option)) {
-                handleRequestedWont(option, acceptNewState);
-            } else {
-                acknowledgeOption(option);
-            }
+        if (willResponse[option] == 0 && requestedWont(option)) {
+            handleRequestedWont(option, acceptNewState);
         }
     }
 
@@ -429,10 +425,6 @@ class Telnet extends SocketClient {
             ++willResponse[option];
             sendWont(option);
         }
-    }
-
-    private void acknowledgeOption(final int option) {
-        // Placeholder for any specific option handling.
     }
 
     /**

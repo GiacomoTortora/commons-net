@@ -140,122 +140,119 @@ public class TFTPClient extends TFTP {
      *                     reported in the message.
      */
     public int receiveFile(final String fileName, final int mode, OutputStream output, InetAddress host, final int port)
-        throws IOException {
-    int bytesRead = 0;
-    int lastBlock = 0;
-    int block = 1;
-    int hostPort = 0;
-    int dataLength = 0;
+            throws IOException {
+        int bytesRead = 0;
+        int lastBlock = 0;
+        int block = 1;
+        int dataLength = 0;
 
-    totalBytesReceived = 0;
+        totalBytesReceived = 0;
 
-    // Set up ASCII mode if required
-    if (mode == ASCII_MODE) {
-        output = new FromNetASCIIOutputStream(output);
-    }
+        // Imposta la modalità ASCII se necessario
+        if (mode == ASCII_MODE) {
+            output = new FromNetASCIIOutputStream(output);
+        }
 
-    TFTPPacket sent = new TFTPReadRequestPacket(host, port, fileName, mode);
-    final TFTPAckPacket ack = new TFTPAckPacket(host, port, 0);
+        TFTPPacket sent = new TFTPReadRequestPacket(host, port, fileName, mode);
+        TFTPAckPacket ack = new TFTPAckPacket(host, port, 0);
 
-    beginBufferedOps();
+        beginBufferedOps();
 
-    boolean justStarted = true;
-    try {
-        do { // while more data to fetch
-            bufferedSend(sent); // start the fetch/send an ack
-            boolean wantReply = true;
-            int timeouts = 0;
-            do { // until successful response
-                try {
-                    final TFTPPacket received = bufferedReceive();
-                    // The first time we receive we get the port number and
-                    // answering host address (for hosts with multiple IPs)
-                    final int recdPort = received.getPort();
-                    final InetAddress recdAddress = received.getAddress();
+        boolean justStarted = true;
+        try {
+            do {
+                // Invia la richiesta di lettura
+                bufferedSend(sent);
 
-                    if (justStarted) {
-                        justStarted = false;
-                        if (recdPort == port) { // must not use the control port here
-                            final TFTPErrorPacket error = new TFTPErrorPacket(recdAddress, recdPort,
-                                    TFTPErrorPacket.UNKNOWN_TID, "INCORRECT SOURCE PORT");
-                            bufferedSend(error);
-                            throw new IOException("Incorrect source port (" + recdPort + ") in request reply.");
-                        }
-                        hostPort = recdPort;
-                        ack.setPort(hostPort);
-                        if (!host.equals(recdAddress)) {
-                            host = recdAddress;
-                            ack.setAddress(host);
-                            sent.setAddress(host);
-                        }
-                    }
+                boolean wantReply = true;
+                int timeouts = 0;
 
-                    // Check for correct host and port
-                    if (host.equals(recdAddress) && recdPort == hostPort) {
-                        // Handle different packet types
-                        switch (received.getType()) {
-                            case TFTPPacket.ERROR: {
-                                TFTPErrorPacket error = (TFTPErrorPacket) received;
-                                throw new IOException(
-                                        "Error code " + error.getError() + " received: " + error.getMessage());
+                while (wantReply) {
+                    try {
+                        TFTPPacket received = bufferedReceive();
+                        int recdPort = received.getPort();
+                        InetAddress recdAddress = received.getAddress();
+
+                        if (justStarted) {
+                            justStarted = false;
+                            if (recdPort == port) {
+                                sendErrorPacket(recdAddress, recdPort, "INCORRECT SOURCE PORT");
+                                throw new IOException("Incorrect source port (" + recdPort + ") in request reply.");
                             }
-                            case TFTPPacket.DATA: {
-                                final TFTPDataPacket data = (TFTPDataPacket) received;
-                                dataLength = data.getDataLength();
-                                lastBlock = data.getBlockNumber();
+                            ack.setPort(recdPort);
+                            if (!host.equals(recdAddress)) {
+                                host = recdAddress;
+                                ack.setAddress(host);
+                                sent.setAddress(host);
+                            }
+                        }
 
-                                if (lastBlock == block) { // is the next block number?
-                                    writeData(output, data, dataLength);
-                                    block = (block + 1) % 65536; // wrap the block number
-                                    wantReply = false; // got the next block, drop out to ack
-                                } else { // unexpected block number
-                                    discardPackets();
-                                    if (lastBlock == (block == 0 ? 65535 : block - 1)) {
-                                        wantReply = false; // Resend last acknowledgment
+                        if (host.equals(recdAddress) && recdPort == ack.getPort()) {
+                            // Gestisce i vari tipi di pacchetti
+                            switch (received.getType()) {
+                                case TFTPPacket.ERROR:
+                                    TFTPErrorPacket error = (TFTPErrorPacket) received;
+                                    throw new IOException(
+                                            "Error code " + error.getError() + " received: " + error.getMessage());
+                                case TFTPPacket.DATA:
+                                    TFTPDataPacket data = (TFTPDataPacket) received;
+                                    dataLength = data.getDataLength();
+                                    lastBlock = data.getBlockNumber();
+
+                                    if (lastBlock == block) { // Se il numero del blocco è corretto
+                                        writeData(output, data, dataLength);
+                                        block = (block + 1) % 65536; // Incrementa e avvolge il numero del blocco
+                                        wantReply = false; // Uscita dal ciclo, dato che è stato ricevuto il blocco
+                                    } else { // Numero di blocco non previsto
+                                        discardPackets();
+                                        if (lastBlock == (block == 0 ? 65535 : block - 1)) {
+                                            wantReply = false; // Resendi l'ack dell'ultimo blocco
+                                        }
                                     }
-                                }
-                                break;
+                                    break;
+                                default:
+                                    throw new IOException(
+                                            "Received unexpected packet type (" + received.getType() + ")");
                             }
-                            default: {
-                                throw new IOException(
-                                        "Received unexpected packet type (" + received.getType() + ")");
-                            }
+                        } else {
+                            // Indirizzo o porta non corretti
+                            sendErrorPacket(recdAddress, recdPort, "Unexpected host or port.");
                         }
-                    } else { // incorrect host or TID
-                        final TFTPErrorPacket error = new TFTPErrorPacket(recdAddress, recdPort,
-                                TFTPErrorPacket.UNKNOWN_TID, "Unexpected host or port.");
-                        bufferedSend(error);
+                    } catch (SocketException | InterruptedIOException e) {
+                        if (++timeouts >= maxTimeouts) {
+                            throw new IOException("Connection timed out.");
+                        }
+                    } catch (TFTPPacketException e) {
+                        throw new IOException("Bad packet: " + e.getMessage());
                     }
-                } catch (final SocketException | InterruptedIOException e) {
-                    if (++timeouts >= maxTimeouts) {
-                        throw new IOException("Connection timed out.");
-                    }
-                } catch (final TFTPPacketException e) {
-                    throw new IOException("Bad packet: " + e.getMessage());
                 }
-            } while (wantReply); // waiting for response
 
-            ack.setBlockNumber(lastBlock);
-            sent = ack;
-            bytesRead += dataLength;
-            totalBytesReceived += dataLength;
-        } while (dataLength == TFTPPacket.SEGMENT_SIZE); // not eof
+                ack.setBlockNumber(lastBlock);
+                sent = ack;
+                bytesRead += dataLength;
+                totalBytesReceived += dataLength;
+            } while (dataLength == TFTPPacket.SEGMENT_SIZE); // Continua finché non ricevi l'EOF
 
-        bufferedSend(sent); // send the final ack
-    } finally {
-        endBufferedOps();
+            bufferedSend(sent); // Invia l'ack finale
+
+        } finally {
+            endBufferedOps();
+        }
+        return bytesRead;
     }
-    return bytesRead;
-}
 
-private void writeData(OutputStream output, TFTPDataPacket data, int dataLength) throws IOException {
-    try {
-        output.write(data.getData(), data.getDataOffset(), dataLength);
-    } catch (final IOException e) {
-        throw e;
+    private void writeData(OutputStream output, TFTPDataPacket data, int dataLength) throws IOException {
+        try {
+            output.write(data.getData(), data.getDataOffset(), dataLength);
+        } catch (IOException e) {
+            throw new IOException("Error writing data to output stream: " + e.getMessage(), e);
+        }
     }
-}
 
+    private void sendErrorPacket(InetAddress recdAddress, int recdPort, String errorMessage) throws IOException {
+        TFTPErrorPacket error = new TFTPErrorPacket(recdAddress, recdPort, TFTPErrorPacket.UNKNOWN_TID, errorMessage);
+        bufferedSend(error);
+    }
 
     /**
      * Same as calling receiveFile(fileName, mode, output, hostname,
@@ -345,7 +342,7 @@ private void writeData(OutputStream output, TFTPDataPacket data, int dataLength)
         totalBytesSent = 0L;
 
         if (mode == ASCII_MODE) {
-            input = new ToNetASCIIInputStream(input);
+            input = new ToNetASCIIInputStream(input); // Conversione in modalità ASCII
         }
 
         TFTPPacket sent = new TFTPWriteRequestPacket(host, port, fileName, mode);
@@ -354,22 +351,23 @@ private void writeData(OutputStream output, TFTPDataPacket data, int dataLength)
         beginBufferedOps();
 
         try {
-            do { // until eof
-                bufferedSend(sent);
+            do {
+                bufferedSend(sent); // Invia richiesta di scrittura
                 boolean wantReply = true;
                 int timeouts = 0;
-                do {
+
+                // Ricevi risposte fino a ottenere l'ACK atteso
+                while (wantReply) {
                     try {
                         final TFTPPacket received = bufferedReceive();
                         final InetAddress recdAddress = received.getAddress();
                         final int recdPort = received.getPort();
 
+                        // Gestisce l'avvio della comunicazione
                         if (justStarted) {
                             justStarted = false;
-                            if (recdPort == port) { // must not use the control port here
-                                final TFTPErrorPacket error = new TFTPErrorPacket(recdAddress, recdPort,
-                                        TFTPErrorPacket.UNKNOWN_TID, "INCORRECT SOURCE PORT");
-                                bufferedSend(error);
+                            if (recdPort == port) {
+                                sendErrorPacket(recdAddress, recdPort, "INCORRECT SOURCE PORT");
                                 throw new IOException("Incorrect source port (" + recdPort + ") in request reply.");
                             }
                             hostPort = recdPort;
@@ -381,28 +379,29 @@ private void writeData(OutputStream output, TFTPDataPacket data, int dataLength)
                             }
                         }
 
-                        // Comply with RFC 783 indication that an error acknowledgment
-                        // should be sent to originator if unexpected TID or host.
+                        // Gestione pacchetti con controllo di porta e indirizzo
                         if (host.equals(recdAddress) && recdPort == hostPort) {
-                            handleReceivedPacket(received);
-                            // Update block number if ACK is received
-                            if (received instanceof TFTPAckPacket) {
-                                final int lastBlock = ((TFTPAckPacket) received).getBlockNumber();
-                                if (lastBlock == block) {
-                                    ++block;
-                                    if (block > 65535) {
-                                        // wrap the block number
-                                        block = 0;
+                            switch (received.getType()) {
+                                case TFTPPacket.ACKNOWLEDGEMENT:
+                                    TFTPAckPacket ack = (TFTPAckPacket) received;
+                                    if (ack.getBlockNumber() == block) {
+                                        block = (block + 1) % 65536; // Incrementa e gestisce il wrapping del blocco
+                                        wantReply = false; // ACK ricevuto correttamente
+                                    } else {
+                                        discardPackets(); // Discard pacchetti duplicati o fuori sequenza
                                     }
-                                    wantReply = false; // got the ack we want
-                                } else {
-                                    discardPackets();
-                                }
+                                    break;
+
+                                case TFTPPacket.ERROR:
+                                    TFTPErrorPacket error = (TFTPErrorPacket) received;
+                                    throw new IOException(
+                                            "Error code " + error.getError() + " received: " + error.getMessage());
+
+                                default:
+                                    throw new IOException("Received unexpected packet type.");
                             }
-                        } else { // wrong host or TID; send error
-                            final TFTPErrorPacket error = new TFTPErrorPacket(recdAddress, recdPort,
-                                    TFTPErrorPacket.UNKNOWN_TID, "Unexpected host or port.");
-                            bufferedSend(error);
+                        } else {
+                            sendErrorPacket(recdAddress, recdPort, "Unexpected host or port.");
                         }
                     } catch (final SocketException | InterruptedIOException e) {
                         if (++timeouts >= maxTimeouts) {
@@ -411,46 +410,37 @@ private void writeData(OutputStream output, TFTPDataPacket data, int dataLength)
                     } catch (final TFTPPacketException e) {
                         throw new IOException("Bad packet: " + e.getMessage());
                     }
-                } while (wantReply);
-
-                if (lastAckWait) {
-                    break; // we were waiting for this; now all done
                 }
 
+                if (lastAckWait) {
+                    break; // Ultimo pacchetto inviato e ACK ricevuto
+                }
+
+                // Prepara il pacchetto dati per inviarlo
                 int dataLength = TFTPPacket.SEGMENT_SIZE;
                 int offset = 4;
                 int totalThisPacket = 0;
                 int bytesRead;
+
                 while (dataLength > 0 && (bytesRead = input.read(sendBuffer, offset, dataLength)) > 0) {
                     offset += bytesRead;
                     dataLength -= bytesRead;
                     totalThisPacket += bytesRead;
                 }
+
                 if (totalThisPacket < TFTPPacket.SEGMENT_SIZE) {
-                    /* this will be our last packet -- send, wait for ack, stop */
-                    lastAckWait = true;
+                    lastAckWait = true; // Flag per ultimo pacchetto
                 }
+
                 data.setBlockNumber(block);
                 data.setData(sendBuffer, 4, totalThisPacket);
-                sent = data;
+                sent = data; // Imposta il pacchetto come quello corrente
                 totalBytesSent += totalThisPacket;
-            } while (true); // loops until after lastAckWait is set
+
+            } while (true); // Ripete fino al completamento della trasmissione
+
         } finally {
             endBufferedOps();
-        }
-    }
-
-    // New method to handle received packets
-    private void handleReceivedPacket(TFTPPacket received) throws IOException {
-        switch (received.getType()) {
-            case TFTPPacket.ERROR:
-                final TFTPErrorPacket error = (TFTPErrorPacket) received;
-                throw new IOException("Error code " + error.getError() + " received: " + error.getMessage());
-            case TFTPPacket.ACKNOWLEDGEMENT:
-                // Process acknowledgment logic if needed
-                break;
-            default:
-                throw new IOException("Received unexpected packet type.");
         }
     }
 

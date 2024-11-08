@@ -741,61 +741,18 @@ public class FTP extends SocketClient {
     }
 
     private int getReply(final boolean reportReply) throws IOException {
-        final int length;
-
         _newReplyString = true;
         _replyLines.clear();
 
-        String line = _controlInput_.readLine();
+        String line = readControlInputLine();
+        int length = validateReplyLength(line);
 
-        if (line == null) {
-            throw new FTPConnectionClosedException("Connection closed without indication.");
-        }
-
-        // In case we run into an anomaly we don't want fatal index exceptions
-        // to be thrown.
-        length = line.length();
-        if (length < REPLY_CODE_LEN) {
-            throw new MalformedServerReplyException("Truncated server reply: " + line);
-        }
-
-        String code;
-        try {
-            code = line.substring(0, REPLY_CODE_LEN);
-            _replyCode = Integer.parseInt(code);
-        } catch (final NumberFormatException e) {
-            throw new MalformedServerReplyException("Could not parse response code.\nServer Reply: " + line);
-        }
-
+        String code = parseReplyCode(line);
+        _replyCode = Integer.parseInt(code);
         _replyLines.add(line);
 
-        // Check the server reply type
         if (length > REPLY_CODE_LEN) {
-            final char sep = line.charAt(REPLY_CODE_LEN);
-            // Get extra lines if message continues.
-            if (sep == '-') {
-                do {
-                    line = _controlInput_.readLine();
-
-                    if (line == null) {
-                        throw new FTPConnectionClosedException("Connection closed without indication.");
-                    }
-
-                    _replyLines.add(line);
-
-                    // The length() check handles problems that could arise from readLine()
-                    // returning too soon after encountering a naked CR or some other
-                    // anomaly.
-                } while (isStrictMultilineParsing() ? strictCheck(line, code) : lenientCheck(line));
-
-            } else if (isStrictReplyParsing()) {
-                if (length == REPLY_CODE_LEN + 1) { // expecting some text
-                    throw new MalformedServerReplyException("Truncated server reply: '" + line + "'");
-                }
-                if (sep != ' ') {
-                    throw new MalformedServerReplyException("Invalid server reply: '" + line + "'");
-                }
-            }
+            processMultiLineReply(line, code);
         } else if (isStrictReplyParsing()) {
             throw new MalformedServerReplyException("Truncated server reply: '" + line + "'");
         }
@@ -805,9 +762,60 @@ public class FTP extends SocketClient {
         }
 
         if (_replyCode == FTPReply.SERVICE_NOT_AVAILABLE) {
-            throw new FTPConnectionClosedException("FTP response 421 received.  Server closed connection.");
+            throw new FTPConnectionClosedException("FTP response 421 received. Server closed connection.");
         }
+
         return _replyCode;
+    }
+
+    private String readControlInputLine() throws IOException {
+        String line = _controlInput_.readLine();
+        if (line == null) {
+            throw new FTPConnectionClosedException("Connection closed without indication.");
+        }
+        return line;
+    }
+
+    private int validateReplyLength(String line) throws MalformedServerReplyException {
+        int length = line.length();
+        if (length < REPLY_CODE_LEN) {
+            throw new MalformedServerReplyException("Truncated server reply: " + line);
+        }
+        return length;
+    }
+
+    private String parseReplyCode(String line) throws MalformedServerReplyException {
+        try {
+            return line.substring(0, REPLY_CODE_LEN);
+        } catch (final NumberFormatException e) {
+            throw new MalformedServerReplyException("Could not parse response code.\nServer Reply: " + line);
+        }
+    }
+
+    private void processMultiLineReply(String line, String code) throws IOException {
+        final char separator = line.charAt(REPLY_CODE_LEN);
+        if (separator == '-') {
+            collectMultilineReply(code);
+        } else if (isStrictReplyParsing()) {
+            validateSingleLineReply(line, separator);
+        }
+    }
+
+    private void collectMultilineReply(String code) throws IOException {
+        String line;
+        do {
+            line = readControlInputLine();
+            _replyLines.add(line);
+        } while (isStrictMultilineParsing() ? strictCheck(line, code) : lenientCheck(line));
+    }
+
+    private void validateSingleLineReply(String line, char separator) throws MalformedServerReplyException {
+        if (line.length() == REPLY_CODE_LEN + 1) {
+            throw new MalformedServerReplyException("Truncated server reply: '" + line + "'");
+        }
+        if (separator != ' ') {
+            throw new MalformedServerReplyException("Invalid server reply: '" + line + "'");
+        }
     }
 
     /**

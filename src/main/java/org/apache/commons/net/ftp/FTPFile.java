@@ -461,7 +461,7 @@ public class FTPFile implements Serializable {
         }
         final StringBuilder sb = new StringBuilder();
         try (Formatter fmt = new Formatter(sb)) {
-            appendPermissions(sb, fmt);
+            appendPermissions(sb);
             appendLinksAndUserGroup(fmt);
             appendSize(fmt);
 
@@ -478,7 +478,7 @@ public class FTPFile implements Serializable {
 
     // Metodi helper per semplificare la logica
 
-    private void appendPermissions(StringBuilder sb, Formatter fmt) {
+    private void appendPermissions(StringBuilder sb) {
         sb.append(formatType());
         sb.append(permissionToString(USER_ACCESS));
         sb.append(permissionToString(GROUP_ACCESS));

@@ -582,33 +582,33 @@ public class FTPClient extends FTP implements Configurable {
     // package protected for access by test cases
     static String parsePathname(final String reply) {
         final String param = reply.substring(REPLY_CODE_LEN + 1);
-        if (param.startsWith("\"")) {
-            final StringBuilder sb = new StringBuilder();
-            boolean quoteSeen = false;
-            // start after initial quote
-            for (int i = 1; i < param.length(); i++) {
-                final char ch = param.charAt(i);
-                if (ch == '"') {
-                    if (quoteSeen) {
-                        sb.append(ch);
-                        quoteSeen = false;
-                    } else {
-                        // don't output yet, in case doubled
-                        quoteSeen = true;
-                    }
-                } else {
-                    if (quoteSeen) { // found lone trailing quote within string
-                        return sb.toString();
-                    }
-                    sb.append(ch); // just another character
-                }
-            }
-            if (quoteSeen) { // found lone trailing quote at end of string
-                return sb.toString();
-            }
+
+        if (!param.startsWith("\"")) {
+            return param;
         }
-        // malformed reply, return all after reply code and space
-        return param;
+
+        final StringBuilder pathname = new StringBuilder();
+        boolean inQuote = false;
+
+        for (int i = 1; i < param.length(); i++) {
+            final char ch = param.charAt(i);
+
+            if (ch == '"') {
+                inQuote = !inQuote; // Alterna inQuote tra true e false
+                if (!inQuote) { // Se diventa false, aggiunge la virgoletta
+                    pathname.append(ch);
+                }
+                continue;
+            }
+
+            if (!inQuote) { // Uscita se troviamo una virgoletta singola
+                break;
+            }
+
+            pathname.append(ch);
+        }
+
+        return pathname.toString();
     }
 
     private int dataConnectionMode;
@@ -816,114 +816,122 @@ public class FTPClient extends FTP implements Configurable {
      * @since 3.1
      */
     protected Socket _openDataConnection_(final String command, final String arg) throws IOException {
-        if (dataConnectionMode != ACTIVE_LOCAL_DATA_CONNECTION_MODE
-                && dataConnectionMode != PASSIVE_LOCAL_DATA_CONNECTION_MODE) {
+        if (!isDataConnectionModeValid()) {
             return null;
         }
+
         final boolean isInet6Address = getRemoteAddress() instanceof Inet6Address;
-        final Socket socket;
         final int soTimeoutMillis = DurationUtils.toMillisInt(dataTimeout);
-        if (dataConnectionMode == ACTIVE_LOCAL_DATA_CONNECTION_MODE) {
-            // if no activePortRange was set (correctly) -> getActivePort() = 0
-            // -> new ServerSocket(0) -> bind to any free local port
-            try (ServerSocket server = _serverSocketFactory_.createServerSocket(getActivePort(), 1, getHostAddress())) {
-                // Try EPRT only if remote server is over IPv6, if not use PORT,
-                // because EPRT has no advantage over PORT on IPv4.
-                // It could even have the disadvantage,
-                // that EPRT will make the data connection fail, because
-                // today's intelligent NAT Firewalls are able to
-                // substitute IP addresses in the PORT command,
-                // but might not be able to recognize the EPRT command.
-                if (isInet6Address) {
-                    if (!FTPReply.isPositiveCompletion(eprt(getReportHostAddress(), server.getLocalPort()))) {
-                        return null;
-                    }
-                } else if (!FTPReply.isPositiveCompletion(port(getReportHostAddress(), server.getLocalPort()))) {
-                    return null;
-                }
-                if (restartOffset > 0 && !restart(restartOffset)) {
-                    return null;
-                }
-                if (!FTPReply.isPositivePreliminary(sendCommand(command, arg))) {
-                    return null;
-                }
-                // For now, let's just use the data timeout value for waiting for
-                // the data connection. It may be desirable to let this be a
-                // separately configurable value. In any case, we really want
-                // to allow preventing the accept from blocking indefinitely.
-                if (soTimeoutMillis >= 0) {
-                    server.setSoTimeout(soTimeoutMillis);
-                }
-                socket = wrapOnDeflate(server.accept());
-                // Ensure the timeout is set before any commands are issued on the new socket
-                if (soTimeoutMillis >= 0) {
-                    socket.setSoTimeout(soTimeoutMillis);
-                }
-                if (receiveDataSocketBufferSize > 0) {
-                    socket.setReceiveBufferSize(receiveDataSocketBufferSize);
-                }
-                if (sendDataSocketBufferSize > 0) {
-                    socket.setSendBufferSize(sendDataSocketBufferSize);
-                }
-            }
-        } else {
-            // We must be in PASSIVE_LOCAL_DATA_CONNECTION_MODE
-            // Try EPSV command first on IPv6 - and IPv4 if enabled.
-            // When using IPv4 with NAT it has the advantage
-            // to work with more rare configurations.
-            // E.g. if FTP server has a static PASV address (external network)
-            // and the client is coming from another internal network.
-            // In that case the data connection after PASV command would fail,
-            // while EPSV would make the client succeed by taking just the port.
-            final boolean attemptEPSV = isUseEPSVwithIPv4() || isInet6Address;
-            if (attemptEPSV && epsv() == FTPReply.ENTERING_EPSV_MODE) {
-                _parseExtendedPassiveModeReply(_replyLines.get(0));
-            } else {
-                if (isInet6Address) {
-                    return null; // Must use EPSV for IPV6
-                }
-                // If EPSV failed on IPV4, revert to PASV
-                if (pasv() != FTPReply.ENTERING_PASSIVE_MODE) {
-                    return null;
-                }
-                _parsePassiveModeReply(_replyLines.get(0));
-            }
-            socket = wrapOnDeflate(_socketFactory_.createSocket());
-            if (receiveDataSocketBufferSize > 0) {
-                socket.setReceiveBufferSize(receiveDataSocketBufferSize);
-            }
-            if (sendDataSocketBufferSize > 0) {
-                socket.setSendBufferSize(sendDataSocketBufferSize);
-            }
-            if (passiveLocalHost != null) {
-                socket.bind(new InetSocketAddress(passiveLocalHost, 0));
-            }
-            // For now, let's just use the data timeout value for waiting for
-            // the data connection. It may be desirable to let this be a
-            // separately configurable value. In any case, we really want
-            // to allow preventing the accept from blocking indefinitely.
-            if (soTimeoutMillis >= 0) {
-                socket.setSoTimeout(soTimeoutMillis);
-            }
-            socket.connect(new InetSocketAddress(passiveHost, passivePort), connectTimeout);
-            if (restartOffset > 0 && !restart(restartOffset)) {
-                socket.close();
+
+        return dataConnectionMode == ACTIVE_LOCAL_DATA_CONNECTION_MODE
+                ? setupActiveConnection(command, arg, isInet6Address, soTimeoutMillis)
+                : setupPassiveConnection(command, arg, isInet6Address, soTimeoutMillis);
+    }
+
+    private boolean isDataConnectionModeValid() {
+        return dataConnectionMode == ACTIVE_LOCAL_DATA_CONNECTION_MODE
+                || dataConnectionMode == PASSIVE_LOCAL_DATA_CONNECTION_MODE;
+    }
+
+    private Socket setupActiveConnection(final String command, final String arg, boolean isInet6Address,
+            int soTimeoutMillis) throws IOException {
+        try (ServerSocket server = createServerSocket()) {
+            if (!sendPortCommand(isInet6Address, server.getLocalPort())) {
                 return null;
             }
-            if (!FTPReply.isPositivePreliminary(sendCommand(command, arg))) {
-                socket.close();
+            if (!prepareForDataTransfer(command, arg)) {
                 return null;
             }
+            setServerSocketTimeout(server, soTimeoutMillis);
+            return configureSocket(server.accept(), soTimeoutMillis);
         }
+    }
+
+    private ServerSocket createServerSocket() throws IOException {
+        return _serverSocketFactory_.createServerSocket(getActivePort(), 1, getHostAddress());
+    }
+
+    private boolean sendPortCommand(boolean isInet6Address, int localPort) throws IOException {
+        return isInet6Address ? FTPReply.isPositiveCompletion(eprt(getReportHostAddress(), localPort))
+                : FTPReply.isPositiveCompletion(port(getReportHostAddress(), localPort));
+    }
+
+    private boolean prepareForDataTransfer(final String command, final String arg) throws IOException {
+        return (restartOffset <= 0 || restart(restartOffset))
+                && FTPReply.isPositivePreliminary(sendCommand(command, arg));
+    }
+
+    private void setServerSocketTimeout(ServerSocket server, int timeout) throws SocketException {
+        if (timeout >= 0) {
+            server.setSoTimeout(timeout);
+        }
+    }
+
+    private Socket configureSocket(Socket socket, int soTimeoutMillis) throws SocketException {
+        socket = wrapOnDeflate(socket);
+        setSocketTimeout(socket, soTimeoutMillis);
+        setSocketBufferSize(socket);
+        return socket;
+    }
+
+    private void setSocketTimeout(Socket socket, int timeout) throws SocketException {
+        if (timeout >= 0) {
+            socket.setSoTimeout(timeout);
+        }
+    }
+
+    private void setSocketBufferSize(Socket socket) throws SocketException {
+        if (receiveDataSocketBufferSize > 0) {
+            socket.setReceiveBufferSize(receiveDataSocketBufferSize);
+        }
+        if (sendDataSocketBufferSize > 0) {
+            socket.setSendBufferSize(sendDataSocketBufferSize);
+        }
+    }
+
+    private Socket setupPassiveConnection(final String command, final String arg, boolean isInet6Address,
+            int soTimeoutMillis) throws IOException {
+        if (!enterPassiveMode(isInet6Address)) {
+            return null;
+        }
+        Socket socket = configureSocket(_socketFactory_.createSocket(), soTimeoutMillis);
+        setSocketBindAddress(socket);
+        socket.connect(new InetSocketAddress(passiveHost, passivePort), connectTimeout);
+
+        if (!prepareForDataTransfer(command, arg)) {
+            socket.close();
+            return null;
+        }
+
+        verifyRemoteHost(socket);
+        return socket;
+    }
+
+    private boolean enterPassiveMode(boolean isInet6Address) throws IOException {
+        boolean attemptEPSV = isUseEPSVwithIPv4() || isInet6Address;
+        if (attemptEPSV && epsv() == FTPReply.ENTERING_EPSV_MODE) {
+            _parseExtendedPassiveModeReply(_replyLines.get(0));
+        } else if (isInet6Address || pasv() != FTPReply.ENTERING_PASSIVE_MODE) {
+            return false;
+        } else {
+            _parsePassiveModeReply(_replyLines.get(0));
+        }
+        return true;
+    }
+
+    private void setSocketBindAddress(Socket socket) throws SocketException, IOException {
+        if (passiveLocalHost != null) {
+            socket.bind(new InetSocketAddress(passiveLocalHost, 0));
+        }
+    }
+
+    private void verifyRemoteHost(Socket socket) throws IOException {
         if (remoteVerificationEnabled && !verifyRemote(socket)) {
-            // Grab the host before we close the socket to avoid NET-663
             final InetAddress socketHost = socket.getInetAddress();
             socket.close();
-            throw new IOException(
-                    "Host attempting data connection " + socketHost.getHostAddress() + " is not same as server "
-                            + getRemoteAddress().getHostAddress());
+            throw new IOException("Host attempting data connection " + socketHost.getHostAddress()
+                    + " is not same as server " + getRemoteAddress().getHostAddress());
         }
-        return socket;
     }
 
     protected void _parseExtendedPassiveModeReply(String reply) throws MalformedServerReplyException {
@@ -1434,45 +1442,63 @@ public class FTPClient extends FTP implements Configurable {
 
     // package access for test purposes
     void createParser(final String parserKey) throws IOException {
-        // We cache the value to avoid creation of a new object every
-        // time a file listing is generated.
-        // Note: we don't check against a null parserKey (NET-544)
-        if (entryParser == null || parserKey != null && !entryParserKey.equals(parserKey)) {
-            if (null != parserKey) {
-                // if a parser key was supplied in the parameters,
-                // use that to create the parser
-                entryParser = parserFactory.createFileEntryParser(parserKey);
-                entryParserKey = parserKey;
+        // Cache del parser per evitare di creare un nuovo oggetto ogni volta
+        if (entryParser == null || (parserKey != null && !entryParserKey.equals(parserKey))) {
 
-            } else // if no parserKey was supplied, check for a configuration
-            // in the params, and if it has a non-empty system type, use that.
-            if (null != configuration && configuration.getServerSystemKey().length() > 0) {
-                entryParser = parserFactory.createFileEntryParser(configuration);
-                entryParserKey = configuration.getServerSystemKey();
+            // Usa il parserKey fornito nei parametri, se disponibile
+            if (parserKey != null) {
+                initializeParserWithKey(parserKey);
+
+                // Se parserKey non è fornito, prova a usare il valore di configurazione
+            } else if (configuration != null && configuration.getServerSystemKey().length() > 0) {
+                initializeParserWithConfigKey(configuration.getServerSystemKey());
+
+                // Autodetect usando il comando SYST se nessuna opzione è fornita
             } else {
-                // if a parserKey hasn't been supplied, and a configuration
-                // hasn't been supplied, and the override property is not set
-                // then autodetect by calling
-                // the SYST command and use that to choose the parser.
-                String systemType = System.getProperty(FTP_SYSTEM_TYPE);
-                if (systemType == null) {
-                    systemType = getSystemType(); // cannot be null
-                    final Properties override = getOverrideProperties();
-                    if (override != null) {
-                        final String newType = override.getProperty(systemType);
-                        if (newType != null) {
-                            systemType = newType;
-                        }
-                    }
-                }
-                if (null != configuration) { // system type must have been empty above
-                    entryParser = parserFactory.createFileEntryParser(new FTPClientConfig(systemType, configuration));
-                } else {
-                    entryParser = parserFactory.createFileEntryParser(systemType);
-                }
-                entryParserKey = systemType;
+                initializeParserWithSystemType();
             }
         }
+    }
+
+    // Inizializza il parser con una chiave specifica
+    private void initializeParserWithKey(String parserKey) throws IOException {
+        entryParser = parserFactory.createFileEntryParser(parserKey);
+        entryParserKey = parserKey;
+    }
+
+    // Inizializza il parser usando la chiave di configurazione fornita
+    private void initializeParserWithConfigKey(String configKey) throws IOException {
+        entryParser = parserFactory.createFileEntryParser(configuration);
+        entryParserKey = configKey;
+    }
+
+    // Inizializza il parser usando il tipo di sistema rilevato o il valore di
+    // override
+    private void initializeParserWithSystemType() throws IOException {
+        String systemType = System.getProperty(FTP_SYSTEM_TYPE);
+
+        if (systemType == null) {
+            systemType = detectSystemTypeWithOverride();
+        }
+        if (configuration != null) {
+            entryParser = parserFactory.createFileEntryParser(new FTPClientConfig(systemType, configuration));
+        } else {
+            entryParser = parserFactory.createFileEntryParser(systemType);
+        }
+        entryParserKey = systemType;
+    }
+
+    // Rileva il tipo di sistema e applica eventuali override
+    private String detectSystemTypeWithOverride() throws IOException {
+        String systemType = getSystemType();
+        Properties override = getOverrideProperties();
+        if (override != null) {
+            String newType = override.getProperty(systemType);
+            if (newType != null) {
+                systemType = newType;
+            }
+        }
+        return systemType;
     }
 
     /**

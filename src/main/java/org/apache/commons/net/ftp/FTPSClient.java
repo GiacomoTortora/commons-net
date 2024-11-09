@@ -902,7 +902,7 @@ public class FTPSClient extends FTPClient {
             if (!prepareDataTransfer(command, arg)) {
                 return null;
             }
-            setServerSocketTimeout(server, soTimeoutMillis);
+            setSocketServerTimeout(server, soTimeoutMillis);
             Socket socket = server.accept();
             setSocketOptions(socket, soTimeoutMillis);
             return socket;
@@ -936,7 +936,7 @@ public class FTPSClient extends FTPClient {
         return FTPReply.isPositivePreliminary(sendCommand(command, arg));
     }
 
-    private void setServerSocketTimeout(ServerSocket server, int soTimeoutMillis) throws SocketException {
+    private void setSocketServerTimeout(ServerSocket server, int soTimeoutMillis) throws SocketException {
         if (soTimeoutMillis >= 0) {
             server.setSoTimeout(soTimeoutMillis);
         }

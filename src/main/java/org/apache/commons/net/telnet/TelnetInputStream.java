@@ -193,13 +193,19 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
     }
 
     private int handleThreadedQueue() throws IOException {
-        queue.notify();
-        try {
-            readIsWaiting = true;
-            queue.wait();
-            readIsWaiting = false;
-        } catch (InterruptedException e) {
-            throw new InterruptedIOException("Fatal thread interruption during read.");
+        synchronized (queue) {
+            queue.notify();
+            try {
+                readIsWaiting = true;
+                queue.wait();
+                readIsWaiting = false;
+            } catch (InterruptedException e) {
+                // Ripristina lo stato di interruzione del thread
+                Thread.currentThread().interrupt();
+                // Lancia una nuova eccezione per segnalare un'interruzione fatale durante la
+                // lettura
+                throw new InterruptedIOException("Fatal thread interruption during read.");
+            }
         }
         return read();
     }
@@ -248,7 +254,8 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
                 try {
                     queue.wait(100);
                 } catch (InterruptedException interrupted) {
-                    // Ignored
+                    // Ripristina lo stato di interruzione del thread
+                    Thread.currentThread().interrupt();
                 }
             }
             return EOF;
@@ -265,7 +272,9 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
         --bytesAvailable;
 
         if (bytesAvailable == 0 && threaded) {
-            queue.notify();
+            synchronized (queue) {
+                queue.notify();
+            }
         }
 
         return ch;
@@ -288,139 +297,57 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
         boolean continueLoop = true;
 
         while (continueLoop) {
-            // Se non possiamo bloccare e non ci sono più dati, ritorna WOULD_BLOCK (-2)
             if (!mayBlock && super.available() == 0) {
                 return WOULD_BLOCK;
             }
 
-            // Uscita solo quando raggiungiamo la fine dello stream.
             if ((ch = super.read()) < 0) {
                 return EOF;
             }
 
-            ch &= 0xff; // Normalizza i byte per assicurarsi che siano positivi
+            ch &= 0xff;
 
-            /* Codice aggiunto per gestire AYT (start) */
             synchronized (client) {
                 client.processAYTResponse();
             }
-            /* Codice aggiunto per gestire AYT (end) */
 
-            /* Codice aggiunto per gestire spystreams (start) */
             client.spyRead(ch);
-            /* Codice aggiunto per gestire spystreams (end) */
 
             switch (receiveState) {
                 case STATE_CR:
-                    if (ch == '\0') {
-                        // Rimuove il carattere null
-                        continue;
-                    }
-                    // Come gestire il newline dopo CR? Gestito come normale dato
-                    receiveState = STATE_DATA;
+                    handleStateCR(ch);
                     break;
 
                 case STATE_DATA:
-                    switch (ch) {
-                        case TelnetCommand.IAC:
-                            receiveState = STATE_IAC;
-                            break;
-                        case '\r':
-                            synchronized (client) {
-                                receiveState = client.requestedDont(TelnetOption.BINARY) ? STATE_CR : STATE_DATA;
-                            }
-                            break;
-                        default:
-                            receiveState = STATE_DATA;
-                            continueLoop = false;
-                            break;
-                    }
+                    continueLoop = handleStateData(ch);
                     break;
 
                 case STATE_IAC:
-                    switch (ch) {
-                        case TelnetCommand.WILL:
-                            receiveState = STATE_WILL;
-                            break;
-                        case TelnetCommand.WONT:
-                            receiveState = STATE_WONT;
-                            break;
-                        case TelnetCommand.DO:
-                            receiveState = STATE_DO;
-                            break;
-                        case TelnetCommand.DONT:
-                            receiveState = STATE_DONT;
-                            break;
-                        case TelnetCommand.SB:
-                            suboptionCount = 0;
-                            receiveState = STATE_SB;
-                            break;
-                        case TelnetCommand.IAC:
-                            receiveState = STATE_DATA;
-                            continueLoop = false;
-                            break;
-                        case TelnetCommand.SE:
-                            receiveState = STATE_DATA;
-                            break;
-                        default:
-                            receiveState = STATE_DATA;
-                            client.processCommand(ch);
-                            break;
-                    }
+                    continueLoop = handleStateIAC(ch);
                     break;
 
                 case STATE_WILL:
-                    synchronized (client) {
-                        client.processWill(ch);
-                        client.flushOutputStream();
-                    }
-                    receiveState = STATE_DATA;
+                    handleStateWill(ch);
                     break;
 
                 case STATE_WONT:
-                    synchronized (client) {
-                        client.processWont(ch);
-                        client.flushOutputStream();
-                    }
-                    receiveState = STATE_DATA;
+                    handleStateWont(ch);
                     break;
 
                 case STATE_DO:
-                    synchronized (client) {
-                        client.processDo(ch);
-                        client.flushOutputStream();
-                    }
-                    receiveState = STATE_DATA;
+                    handleStateDo(ch);
                     break;
 
                 case STATE_DONT:
-                    synchronized (client) {
-                        client.processDont(ch);
-                        client.flushOutputStream();
-                    }
-                    receiveState = STATE_DATA;
+                    handleStateDont(ch);
                     break;
 
                 case STATE_SB:
-                    if (ch == TelnetCommand.IAC) {
-                        receiveState = STATE_IAC_SB;
-                    } else if (suboptionCount < suboption.length) {
-                        suboption[suboptionCount++] = ch;
-                    }
+                    handleStateSB(ch);
                     break;
 
                 case STATE_IAC_SB:
-                    if (ch == TelnetCommand.SE) {
-                        synchronized (client) {
-                            client.processSuboption(suboption, suboptionCount);
-                            client.flushOutputStream();
-                        }
-                        receiveState = STATE_DATA;
-                    } else if (ch == TelnetCommand.IAC && suboptionCount < suboption.length) {
-                        suboption[suboptionCount++] = ch;
-                    } else {
-                        receiveState = STATE_SB;
-                    }
+                    handleStateIACSb(ch);
                     break;
 
                 default:
@@ -428,7 +355,118 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
                     break;
             }
         }
-        return ch; // Ritorna il carattere letto
+
+        return ch;
+    }
+
+    // Funzioni helper per semplificare la logica dello switch principale
+
+    private void handleStateCR(int ch) {
+        if (ch == '\0') {
+            return;
+        }
+        receiveState = STATE_DATA;
+    }
+
+    private boolean handleStateData(int ch) {
+        switch (ch) {
+            case TelnetCommand.IAC:
+                receiveState = STATE_IAC;
+                return true;
+            case '\r':
+                synchronized (client) {
+                    receiveState = client.requestedDont(TelnetOption.BINARY) ? STATE_CR : STATE_DATA;
+                }
+                return true;
+            default:
+                receiveState = STATE_DATA;
+                return false;
+        }
+    }
+
+    private boolean handleStateIAC(int ch) {
+        switch (ch) {
+            case TelnetCommand.WILL:
+                receiveState = STATE_WILL;
+                return true;
+            case TelnetCommand.WONT:
+                receiveState = STATE_WONT;
+                return true;
+            case TelnetCommand.DO:
+                receiveState = STATE_DO;
+                return true;
+            case TelnetCommand.DONT:
+                receiveState = STATE_DONT;
+                return true;
+            case TelnetCommand.SB:
+                suboptionCount = 0;
+                receiveState = STATE_SB;
+                return true;
+            case TelnetCommand.IAC:
+                receiveState = STATE_DATA;
+                return false;
+            case TelnetCommand.SE:
+                receiveState = STATE_DATA;
+                return true;
+            default:
+                receiveState = STATE_DATA;
+                client.processCommand(ch);
+                return true;
+        }
+    }
+
+    private void handleStateWill(int ch) throws IOException {
+        synchronized (client) {
+            client.processWill(ch);
+            client.flushOutputStream();
+        }
+        receiveState = STATE_DATA;
+    }
+
+    private void handleStateWont(int ch) throws IOException {
+        synchronized (client) {
+            client.processWont(ch);
+            client.flushOutputStream();
+        }
+        receiveState = STATE_DATA;
+    }
+
+    private void handleStateDo(int ch) throws IOException {
+        synchronized (client) {
+            client.processDo(ch);
+            client.flushOutputStream();
+        }
+        receiveState = STATE_DATA;
+    }
+
+    private void handleStateDont(int ch) throws IOException {
+        synchronized (client) {
+            client.processDont(ch);
+            client.flushOutputStream();
+        }
+        receiveState = STATE_DATA;
+    }
+
+    private void handleStateSB(int ch) {
+        if (ch == TelnetCommand.IAC) {
+            receiveState = STATE_IAC_SB;
+        } else if (suboptionCount < suboption.length) {
+            suboption[suboptionCount++] = ch;
+        }
+    }
+
+    private void handleStateIACSb(int ch) throws IOException {
+        if (ch == TelnetCommand.SE) {
+            synchronized (client) {
+                client.processSuboption(suboption, suboptionCount);
+                client.flushOutputStream();
+            }
+            receiveState = STATE_DATA;
+        } else if (ch == TelnetCommand.IAC && suboptionCount < suboption.length) {
+            suboption[suboptionCount++] = ch;
+        } else {
+            receiveState = STATE_SB;
+        }
     }
 
     /**

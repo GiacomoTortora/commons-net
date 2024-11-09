@@ -243,19 +243,27 @@ public class OS400FTPEntryParser extends ConfigurableFTPFileEntryParserImpl {
     /**
      * The default constructor for a OS400FTPEntryParser object.
      *
-     * @throws IllegalArgumentException Thrown if the regular expression is unparseable. Should not be seen under normal conditions. If it is seen, this is a
-     *                                  sign that {@code REGEX} is not a valid regular expression.
+     * @throws IllegalArgumentException Thrown if the regular expression is
+     *                                  unparseable. Should not be seen under normal
+     *                                  conditions. If it is seen, this is a
+     *                                  sign that {@code REGEX} is not a valid
+     *                                  regular expression.
      */
     public OS400FTPEntryParser() {
         this(null);
     }
 
     /**
-     * This constructor allows the creation of an OS400FTPEntryParser object with something other than the default configuration.
+     * This constructor allows the creation of an OS400FTPEntryParser object with
+     * something other than the default configuration.
      *
-     * @param config The {@link FTPClientConfig configuration} object used to configure this parser.
-     * @throws IllegalArgumentException Thrown if the regular expression is unparseable. Should not be seen under normal conditions. If it is seen, this is a
-     *                                  sign that {@code REGEX} is not a valid regular expression.
+     * @param config The {@link FTPClientConfig configuration} object used to
+     *               configure this parser.
+     * @throws IllegalArgumentException Thrown if the regular expression is
+     *                                  unparseable. Should not be seen under normal
+     *                                  conditions. If it is seen, this is a
+     *                                  sign that {@code REGEX} is not a valid
+     *                                  regular expression.
      * @since 1.4
      */
     public OS400FTPEntryParser(final FTPClientConfig config) {
@@ -264,7 +272,8 @@ public class OS400FTPEntryParser extends ConfigurableFTPFileEntryParserImpl {
     }
 
     /**
-     * Defines a default configuration to be used when this class is instantiated without a {@link FTPClientConfig FTPClientConfig} parameter being specified.
+     * Defines a default configuration to be used when this class is instantiated
+     * without a {@link FTPClientConfig FTPClientConfig} parameter being specified.
      *
      * @return the default configuration for this parser.
      */
@@ -284,98 +293,107 @@ public class OS400FTPEntryParser extends ConfigurableFTPFileEntryParserImpl {
 
     @Override
     public FTPFile parseFTPEntry(final String entry) {
-
         final FTPFile file = new FTPFile();
         file.setRawListing(entry);
-        final int type;
 
-        if (matches(entry)) {
-            final String usr = group(1);
-            final String filesize = group(2);
-            String datestr = "";
-            if (!isNullOrEmpty(group(3)) || !isNullOrEmpty(group(4))) {
-                datestr = group(3) + " " + group(4);
-            }
-            final String typeStr = group(5);
-            String name = group(6);
-
-            boolean mustScanForPathSeparator = true;
-
-            try {
-                file.setTimestamp(super.parseTimestamp(datestr));
-            } catch (final ParseException e) {
-                // intentionally do nothing
-            }
-
-            if (typeStr.equalsIgnoreCase("*STMF")) {
-                type = FTPFile.FILE_TYPE;
-                if (isNullOrEmpty(filesize) || isNullOrEmpty(name)) {
-                    return null;
-                }
-            } else if (typeStr.equalsIgnoreCase("*DIR")) {
-                type = FTPFile.DIRECTORY_TYPE;
-                if (isNullOrEmpty(filesize) || isNullOrEmpty(name)) {
-                    return null;
-                }
-            } else if (typeStr.equalsIgnoreCase("*FILE")) {
-                // File, defines the structure of the data (columns of a row)
-                // but the data is stored in one or more members. Typically, a
-                // source file contains multiple members whereas it is
-                // recommended (but not enforced) to use one member per data
-                // file.
-                // Save files are a special type of files which are used
-                // to save objects, e.g. for backups.
-                if (name == null || !name.toUpperCase(Locale.ROOT).endsWith(".SAVF")) {
-                    return null;
-                }
-                mustScanForPathSeparator = false;
-                type = FTPFile.FILE_TYPE;
-            } else if (typeStr.equalsIgnoreCase("*MEM")) {
-                mustScanForPathSeparator = false;
-                type = FTPFile.FILE_TYPE;
-
-                if (isNullOrEmpty(name)) {
-                    return null;
-                }
-                if (!(isNullOrEmpty(filesize) && isNullOrEmpty(datestr))) {
-                    return null;
-                }
-
-                // Quick and dirty bug fix to make SelectorUtils work.
-                // Class SelectorUtils uses 'File.separator' to splitt
-                // a given path into pieces. But actually it had to
-                // use the separator of the FTP server, which is a forward
-                // slash in case of an AS/400.
-                name = name.replace('/', File.separatorChar);
-            } else {
-                type = FTPFile.UNKNOWN_TYPE;
-            }
-
-            file.setType(type);
-
-            file.setUser(usr);
-
-            try {
-                file.setSize(Long.parseLong(filesize));
-            } catch (final NumberFormatException e) {
-                // intentionally do nothing
-            }
-
-            if (name.endsWith("/")) {
-                name = name.substring(0, name.length() - 1);
-            }
-            if (mustScanForPathSeparator) {
-                final int pos = name.lastIndexOf('/');
-                if (pos > -1) {
-                    name = name.substring(pos + 1);
-                }
-            }
-
-            file.setName(name);
-
-            return file;
+        if (!matches(entry)) {
+            return null;
         }
-        return null;
+
+        final String usr = group(1);
+        final String filesize = group(2);
+        String datestr = getDateString();
+
+        final String typeStr = group(5);
+        String name = group(6);
+
+        int type = determineFileType(typeStr, name, filesize);
+
+        if (type == FTPFile.UNKNOWN_TYPE) {
+            return null;
+        }
+
+        file.setType(type);
+        file.setUser(usr);
+        setFileSize(file, filesize);
+
+        try {
+            file.setTimestamp(super.parseTimestamp(datestr));
+        } catch (final ParseException e) {
+            // intentionally do nothing
+        }
+
+        name = processName(name, typeStr);
+
+        file.setName(name);
+        return file;
+    }
+
+    // Estrae la data dalla stringa se presente
+    private String getDateString() {
+        String datestr = "";
+        if (!isNullOrEmpty(group(3)) || !isNullOrEmpty(group(4))) {
+            datestr = group(3) + " " + group(4);
+        }
+        return datestr;
+    }
+
+    // Determina il tipo del file basato sulla stringa "typeStr"
+    private int determineFileType(String typeStr, String name, String filesize) {
+        int type = FTPFile.UNKNOWN_TYPE;
+
+        if (typeStr.equalsIgnoreCase("*STMF")) {
+            type = FTPFile.FILE_TYPE;
+            if (isNullOrEmpty(filesize) || isNullOrEmpty(name)) {
+                return FTPFile.UNKNOWN_TYPE;
+            }
+        } else if (typeStr.equalsIgnoreCase("*DIR")) {
+            type = FTPFile.DIRECTORY_TYPE;
+            if (isNullOrEmpty(filesize) || isNullOrEmpty(name)) {
+                return FTPFile.UNKNOWN_TYPE;
+            }
+        } else if (typeStr.equalsIgnoreCase("*FILE")) {
+            if (name == null || !name.toUpperCase(Locale.ROOT).endsWith(".SAVF")) {
+                return FTPFile.UNKNOWN_TYPE;
+            }
+            type = FTPFile.FILE_TYPE;
+        } else if (typeStr.equalsIgnoreCase("*MEM")) {
+            if (isNullOrEmpty(name) || !(isNullOrEmpty(filesize) && isNullOrEmpty(group(3)))) {
+                return FTPFile.UNKNOWN_TYPE;
+            }
+            name = name.replace('/', File.separatorChar); // Fix separator issue
+            type = FTPFile.FILE_TYPE;
+        }
+
+        return type;
+    }
+
+    // Imposta la dimensione del file
+    private void setFileSize(FTPFile file, String filesize) {
+        try {
+            file.setSize(Long.parseLong(filesize));
+        } catch (final NumberFormatException e) {
+            // intentionally do nothing
+        }
+    }
+
+    // Processa e formatta il nome del file
+    private String processName(String name, String typeStr) {
+        if (name.endsWith("/")) {
+            name = name.substring(0, name.length() - 1);
+        }
+
+        if (typeStr.equalsIgnoreCase("*MEM")) {
+            return name; // No further modification needed for *MEM
+        }
+
+        // Only process the path for non-*MEM file types
+        final int pos = name.lastIndexOf('/');
+        if (pos > -1) {
+            name = name.substring(pos + 1);
+        }
+
+        return name;
     }
 
 }

@@ -194,20 +194,24 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
 
     private int handleThreadedQueue() throws IOException {
         synchronized (queue) {
-            queue.notify();
-            try {
-                readIsWaiting = true;
-                queue.wait();
-                readIsWaiting = false;
-            } catch (InterruptedException e) {
-                // Ripristina lo stato di interruzione del thread
-                Thread.currentThread().interrupt();
-                // Lancia una nuova eccezione per segnalare un'interruzione fatale durante la
-                // lettura
-                throw new InterruptedIOException("Fatal thread interruption during read.");
+            queue.notify(); // Sveglia eventuali thread in attesa
+
+            // Usa un ciclo while per assicurarsi che la condizione sia ancora vera prima di
+            // aspettare
+            while (!readIsWaiting) {
+                try {
+                    queue.wait(); // Aspetta che la condizione sia soddisfatta
+                } catch (InterruptedException e) {
+                    // Ripristina lo stato di interruzione del thread
+                    Thread.currentThread().interrupt();
+                    // Lancia una nuova eccezione per segnalare un'interruzione fatale durante la
+                    // lettura
+                    throw new InterruptedIOException("Fatal thread interruption during read.");
+                }
             }
+            readIsWaiting = false; // Ripristina lo stato di attesa
         }
-        return read();
+        return read(); // Esegui la lettura
     }
 
     private int handleNonThreadedQueue() throws IOException {
@@ -250,12 +254,18 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable {
         } catch (InterruptedIOException e) {
             synchronized (queue) {
                 ioException = e;
-                queue.notifyAll();
-                try {
-                    queue.wait(100);
-                } catch (InterruptedException interrupted) {
-                    // Ripristina lo stato di interruzione del thread
-                    Thread.currentThread().interrupt();
+                queue.notifyAll(); // Notifica tutti i thread in attesa
+
+                // Usa un ciclo while per attendere che la condizione si risolva
+                while (readIsWaiting) {
+                    try {
+                        queue.wait(100); // Aspetta per un massimo di 100 ms
+                    } catch (InterruptedException interrupted) {
+                        // Ripristina lo stato di interruzione del thread
+                        Thread.currentThread().interrupt();
+                        // Esci dal ciclo se il thread è stato interrotto
+                        return EOF;
+                    }
                 }
             }
             return EOF;

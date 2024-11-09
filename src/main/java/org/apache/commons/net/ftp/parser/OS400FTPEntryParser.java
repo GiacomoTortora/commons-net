@@ -342,27 +342,36 @@ public class OS400FTPEntryParser extends ConfigurableFTPFileEntryParserImpl {
     private int determineFileType(String typeStr, String name, String filesize) {
         int type = FTPFile.UNKNOWN_TYPE;
 
-        if (typeStr.equalsIgnoreCase("*STMF")) {
-            type = FTPFile.FILE_TYPE;
-            if (isNullOrEmpty(filesize) || isNullOrEmpty(name)) {
-                return FTPFile.UNKNOWN_TYPE;
-            }
-        } else if (typeStr.equalsIgnoreCase("*DIR")) {
-            type = FTPFile.DIRECTORY_TYPE;
-            if (isNullOrEmpty(filesize) || isNullOrEmpty(name)) {
-                return FTPFile.UNKNOWN_TYPE;
-            }
-        } else if (typeStr.equalsIgnoreCase("*FILE")) {
-            if (name == null || !name.toUpperCase(Locale.ROOT).endsWith(".SAVF")) {
-                return FTPFile.UNKNOWN_TYPE;
-            }
-            type = FTPFile.FILE_TYPE;
-        } else if (typeStr.equalsIgnoreCase("*MEM")) {
-            if (isNullOrEmpty(name) || !(isNullOrEmpty(filesize) && isNullOrEmpty(group(3)))) {
-                return FTPFile.UNKNOWN_TYPE;
-            }
-            name = name.replace('/', File.separatorChar); // Fix separator issue
-            type = FTPFile.FILE_TYPE;
+        // Controllo su tipoStr per determinare il tipo di file
+        switch (typeStr.toUpperCase(Locale.ROOT)) {
+            case "*STMF":
+                type = FTPFile.FILE_TYPE;
+                if (isNullOrEmpty(filesize) || isNullOrEmpty(name)) {
+                    return FTPFile.UNKNOWN_TYPE;
+                }
+                break;
+
+            case "*DIR":
+                type = FTPFile.DIRECTORY_TYPE;
+                if (isNullOrEmpty(filesize) || isNullOrEmpty(name)) {
+                    return FTPFile.UNKNOWN_TYPE;
+                }
+                break;
+
+            case "*FILE":
+                if (name == null || !name.toUpperCase(Locale.ROOT).endsWith(".SAVF")) {
+                    return FTPFile.UNKNOWN_TYPE;
+                }
+                type = FTPFile.FILE_TYPE;
+                break;
+
+            case "*MEM":
+                if (isNullOrEmpty(name) || !(isNullOrEmpty(filesize) && isNullOrEmpty(group(3)))) {
+                    return FTPFile.UNKNOWN_TYPE;
+                }
+                name = name.replace('/', File.separatorChar); // Fix separator issue
+                type = FTPFile.FILE_TYPE;
+                break;
         }
 
         return type;
